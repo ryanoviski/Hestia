@@ -16,6 +16,7 @@ public interface TransactionRepository {
     Transaction update(Transaction transaction);
     Optional<Transaction> findById(long id, long householdId);
     List<Transaction> search(long householdId, TransactionFilter filter, Clock clock);
+    List<Transaction> searchCalendar(long householdId, TransactionFilter filter, Clock clock);
     void updateStatus(long id, long householdId, TransactionStatus status, LocalDate settlementDate);
     DashboardSummary summarize(long householdId, YearMonth month, Clock clock);
 }

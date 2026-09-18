@@ -39,6 +39,9 @@ public final class MainController {
             case "transactions" -> showTransactions("Movimentações", null, false);
             case "income" -> showTransactions("Receitas", TransactionType.INCOME, false);
             case "bills" -> showTransactions("Contas a pagar", TransactionType.EXPENSE, true);
+            case "recurring" -> showRecurring();
+            case "installments" -> showInstallments();
+            case "calendar" -> showCalendar();
             default -> showPlaceholder(button.getText().trim());
         }
     }
@@ -75,6 +78,10 @@ public final class MainController {
             controller.configure(context.profileService());
         });
     }
+
+    private void showRecurring() { pageTitle.setText("Recorrências"); loadContent("/fxml/recurring-expenses-view.fxml", loader -> ((RecurringExpensesController)loader.getController()).configure(context)); }
+    private void showInstallments() { pageTitle.setText("Parcelamentos"); loadContent("/fxml/installment-plans-view.fxml", loader -> ((InstallmentPlansController)loader.getController()).configure(context)); }
+    private void showCalendar() { pageTitle.setText("Calendário"); loadContent("/fxml/calendar-view.fxml", loader -> ((CalendarController)loader.getController()).configure(context)); }
 
     private void showPlaceholder(String title) {
         pageTitle.setText(title);

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?><?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.github.ryanoviski.hestia.presentation.controllers.RecurringExpensesController" spacing="15" styleClass="view">
+ <HBox alignment="CENTER_LEFT"><VBox spacing="4" HBox.hgrow="ALWAYS"><Label text="Recorrências" styleClass="view-heading"/><Label text="Administre compromissos mensais e suas ocorrências." styleClass="view-subtitle"/></VBox><Button text="Nova recorrência" onAction="#create" styleClass="primary-button"/></HBox>
+ <FlowPane hgap="9" vgap="9" styleClass="filter-bar"><TextField fx:id="searchField" promptText="Pesquisar"/><ComboBox fx:id="profileFilter" promptText="Todos os perfis"/><ComboBox fx:id="categoryFilter" promptText="Todas as categorias"/><Button text="Filtrar" onAction="#refresh" styleClass="primary-button"/></FlowPane>
+ <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="profiles-scroll"><VBox fx:id="list" spacing="8" styleClass="profiles-list"><Label fx:id="emptyState" text="Nenhuma recorrência cadastrada." styleClass="empty-state"/></VBox></ScrollPane>
+</VBox>

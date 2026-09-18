@@ -24,6 +24,7 @@
             <Button text="Movimentações" userData="transactions" onAction="#navigate" styleClass="nav-button" />
             <Button text="Contas a pagar" userData="bills" onAction="#navigate" styleClass="nav-button" />
             <Button text="Receitas" userData="income" onAction="#navigate" styleClass="nav-button" />
+            <Button text="Recorrências" userData="recurring" onAction="#navigate" styleClass="nav-button" />
             <Button text="Parcelamentos" userData="installments" onAction="#navigate" styleClass="nav-button" />
             <Button text="Calendário" userData="calendar" onAction="#navigate" styleClass="nav-button" />
             <Button text="Orçamentos" userData="budgets" onAction="#navigate" styleClass="nav-button" />

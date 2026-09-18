@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?><?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.github.ryanoviski.hestia.presentation.controllers.InstallmentPlansController" spacing="15" styleClass="view">
+ <HBox alignment="CENTER_LEFT"><VBox spacing="4" HBox.hgrow="ALWAYS"><Label text="Parcelamentos" styleClass="view-heading"/><Label text="Compras parceladas independentes, sem vínculo bancário ou com cartões." styleClass="view-subtitle"/></VBox><Button text="Nova compra parcelada" onAction="#create" styleClass="primary-button"/></HBox>
+ <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="profiles-scroll"><VBox fx:id="list" spacing="8" styleClass="profiles-list"><Label fx:id="emptyState" text="Nenhuma compra parcelada cadastrada." styleClass="empty-state"/></VBox></ScrollPane>
+</VBox>

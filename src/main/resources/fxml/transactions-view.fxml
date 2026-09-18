@@ -12,6 +12,7 @@
         <ComboBox fx:id="statusFilter" promptText="Todas as situações" prefWidth="155"/>
         <ComboBox fx:id="profileFilter" promptText="Todos os perfis" prefWidth="150"/>
         <ComboBox fx:id="categoryFilter" promptText="Todas as categorias" prefWidth="165"/>
+        <ComboBox fx:id="originFilter" promptText="Todas as origens" prefWidth="145"/>
         <CheckBox fx:id="overdueOnly" text="Somente vencidas"/>
         <Button text="Filtrar" onAction="#applyFilters" styleClass="primary-button"/>
         <Button text="Limpar" onAction="#clearFilters" styleClass="secondary-button"/>

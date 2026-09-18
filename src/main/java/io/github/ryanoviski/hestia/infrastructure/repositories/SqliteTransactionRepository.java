@@ -5,6 +5,7 @@ import io.github.ryanoviski.hestia.application.dto.TransactionFilter;
 import io.github.ryanoviski.hestia.application.repositories.TransactionRepository;
 import io.github.ryanoviski.hestia.domain.enums.TransactionStatus;
 import io.github.ryanoviski.hestia.domain.enums.TransactionType;
+import io.github.ryanoviski.hestia.domain.enums.TransactionOrigin;
 import io.github.ryanoviski.hestia.domain.models.Transaction;
 import io.github.ryanoviski.hestia.infrastructure.database.ConnectionFactory;
 import io.github.ryanoviski.hestia.infrastructure.database.DatabaseException;
@@ -27,8 +28,16 @@ import java.util.Optional;
 
 public final class SqliteTransactionRepository implements TransactionRepository {
     private static final String SELECT = """
-            SELECT t.*, p.name profile_name, c.name category_name
+            SELECT t.*, p.name profile_name, c.name category_name,
+            CASE WHEN ro.id IS NOT NULL THEN 'RECURRING' WHEN i.id IS NOT NULL THEN 'INSTALLMENT' ELSE 'MANUAL' END origin_type,
+            COALESCE(ro.recurring_expense_id, i.installment_plan_id) origin_id,
+            CASE WHEN ro.id IS NOT NULL THEN 'Recorrência mensal'
+                 WHEN i.id IS NOT NULL THEN 'Parcela ' || i.installment_number || ' de ' || ip.installment_count
+                 ELSE NULL END origin_details
             FROM transactions t JOIN profiles p ON p.id=t.profile_id JOIN categories c ON c.id=t.category_id
+            LEFT JOIN recurring_expense_occurrences ro ON ro.transaction_id=t.id
+            LEFT JOIN installments i ON i.transaction_id=t.id
+            LEFT JOIN installment_plans ip ON ip.id=i.installment_plan_id
             """;
     private final ConnectionFactory connections;
 
@@ -57,7 +66,9 @@ public final class SqliteTransactionRepository implements TransactionRepository 
                 reference_date=?,due_date=?,settlement_date=?,status=?,notes=?,updated_at=?
                 WHERE id=? AND household_id=?
                 """;
-        try (var connection = connections.openConnection(); var statement = connection.prepareStatement(sql)) {
+        try (var connection = connections.openConnection()) {
+            connection.setAutoCommit(false);
+            try (var statement = connection.prepareStatement(sql)) {
             statement.setLong(1, transaction.profileId()); statement.setLong(2, transaction.categoryId());
             statement.setString(3, transaction.type().name()); statement.setString(4, transaction.description());
             statement.setLong(5, transaction.amountCents()); statement.setString(6, transaction.referenceDate().toString());
@@ -65,8 +76,13 @@ public final class SqliteTransactionRepository implements TransactionRepository 
             statement.setString(9, transaction.status().name()); statement.setString(10, transaction.notes());
             statement.setString(11, transaction.updatedAt().toString()); statement.setLong(12, transaction.id());
             statement.setLong(13, transaction.householdId());
-            if (statement.executeUpdate() != 1) throw new SQLException("Transaction was not updated");
-            return transaction;
+                if (statement.executeUpdate() != 1) throw new SQLException("Transaction was not updated");
+            }
+            try (var customized = connection.prepareStatement(
+                    "UPDATE recurring_expense_occurrences SET customized=1 WHERE transaction_id=?")) {
+                customized.setLong(1, transaction.id()); customized.executeUpdate();
+            }
+            connection.commit(); return transaction;
         } catch (SQLException exception) { throw failure("update transaction", exception); }
     }
 
@@ -79,14 +95,27 @@ public final class SqliteTransactionRepository implements TransactionRepository 
     }
 
     @Override public List<Transaction> search(long householdId, TransactionFilter filter, Clock clock) {
+        return search(householdId, filter, clock, false);
+    }
+
+    @Override public List<Transaction> searchCalendar(long householdId, TransactionFilter filter, Clock clock) {
+        return search(householdId, filter, clock, true);
+    }
+
+    private List<Transaction> search(long householdId, TransactionFilter filter, Clock clock, boolean calendarDates) {
         StringBuilder sql = new StringBuilder(SELECT + " WHERE t.household_id=?");
         List<Object> values = new ArrayList<>(); values.add(householdId);
         if (filter.search() != null && !filter.search().isBlank()) { sql.append(" AND lower(t.description) LIKE lower(?)"); values.add("%" + filter.search().trim() + "%"); }
-        if (filter.month() != null) { sql.append(" AND t.reference_date>=? AND t.reference_date<?"); values.add(filter.month().atDay(1).toString()); values.add(filter.month().plusMonths(1).atDay(1).toString()); }
+        if (filter.month() != null) { sql.append(calendarDates ? " AND COALESCE(t.due_date,t.reference_date)>=? AND COALESCE(t.due_date,t.reference_date)<?" : " AND t.reference_date>=? AND t.reference_date<?"); values.add(filter.month().atDay(1).toString()); values.add(filter.month().plusMonths(1).atDay(1).toString()); }
         if (filter.type() != null) { sql.append(" AND t.transaction_type=?"); values.add(filter.type().name()); }
         if (filter.status() != null) { sql.append(" AND t.status=?"); values.add(filter.status().name()); }
         if (filter.profileId() != null) { sql.append(" AND t.profile_id=?"); values.add(filter.profileId()); }
         if (filter.categoryId() != null) { sql.append(" AND t.category_id=?"); values.add(filter.categoryId()); }
+        if (filter.origin() != null) { switch (filter.origin()) {
+            case MANUAL -> sql.append(" AND ro.id IS NULL AND i.id IS NULL");
+            case RECURRING -> sql.append(" AND ro.id IS NOT NULL");
+            case INSTALLMENT -> sql.append(" AND i.id IS NOT NULL");
+        }}
         if (filter.overdueOnly()) { sql.append(" AND t.transaction_type='EXPENSE' AND t.status='PENDING' AND t.due_date<?"); values.add(LocalDate.now(clock).toString()); }
         sql.append(filter.dueDateAscending()
                 ? " ORDER BY t.due_date IS NULL, t.due_date, t.id"
@@ -160,8 +189,8 @@ public final class SqliteTransactionRepository implements TransactionRepository 
     }
     private void bindValues(PreparedStatement s,List<Object> values)throws SQLException{int i=1;for(Object v:values){if(v instanceof Long l)s.setLong(i++,l);else s.setString(i++,v.toString());}}
     private void setDate(PreparedStatement s,int i,LocalDate d)throws SQLException{if(d==null)s.setNull(i,java.sql.Types.VARCHAR);else s.setString(i,d.toString());}
-    private Transaction withId(Transaction t,long id){return new Transaction(id,t.householdId(),t.profileId(),t.categoryId(),t.type(),t.description(),t.amountCents(),t.referenceDate(),t.dueDate(),t.settlementDate(),t.status(),t.notes(),t.createdAt(),t.updatedAt(),t.profileName(),t.categoryName());}
-    private Transaction map(ResultSet r)throws SQLException{return new Transaction(r.getLong("id"),r.getLong("household_id"),r.getLong("profile_id"),r.getLong("category_id"),TransactionType.valueOf(r.getString("transaction_type")),r.getString("description"),r.getLong("amount_cents"),LocalDate.parse(r.getString("reference_date")),date(r,"due_date"),date(r,"settlement_date"),TransactionStatus.valueOf(r.getString("status")),r.getString("notes"),Instant.parse(r.getString("created_at")),Instant.parse(r.getString("updated_at")),r.getString("profile_name"),r.getString("category_name"));}
+    private Transaction withId(Transaction t,long id){return new Transaction(id,t.householdId(),t.profileId(),t.categoryId(),t.type(),t.description(),t.amountCents(),t.referenceDate(),t.dueDate(),t.settlementDate(),t.status(),t.notes(),t.createdAt(),t.updatedAt(),t.profileName(),t.categoryName(),t.origin(),t.originId(),t.originDetails());}
+    private Transaction map(ResultSet r)throws SQLException{long originId=r.getLong("origin_id");return new Transaction(r.getLong("id"),r.getLong("household_id"),r.getLong("profile_id"),r.getLong("category_id"),TransactionType.valueOf(r.getString("transaction_type")),r.getString("description"),r.getLong("amount_cents"),LocalDate.parse(r.getString("reference_date")),date(r,"due_date"),date(r,"settlement_date"),TransactionStatus.valueOf(r.getString("status")),r.getString("notes"),Instant.parse(r.getString("created_at")),Instant.parse(r.getString("updated_at")),r.getString("profile_name"),r.getString("category_name"),TransactionOrigin.valueOf(r.getString("origin_type")),r.wasNull()?null:originId,r.getString("origin_details"));}
     private LocalDate date(ResultSet r,String name)throws SQLException{String v=r.getString(name);return v==null?null:LocalDate.parse(v);}
     private DatabaseException failure(String action,SQLException e){return new DatabaseException("Could not "+action,e);}
 }

@@ -19,6 +19,10 @@ presentation → application → domain
 
 O fluxo comum é `Controller` → `Service` → contrato de `Repository` → implementação SQLite. Por exemplo, o cadastro financeiro percorre `TransactionsController` → `TransactionService` → `TransactionRepository` → `SqliteTransactionRepository`. A inicialização monta explicitamente essas dependências em `ApplicationBootstrap`, sem estado global mutável e sem controllers acoplados entre si.
 
+Operações compostas usam `FinancialCommitmentRepository` como fronteira transacional. Os serviços
+calculam e validam as regras; o repositório persiste regra, vínculos e movimentações na mesma conexão,
+fazendo rollback integral em caso de falha.
+
 ## Movimentações e situações
 
 `Transaction` representa receitas (`INCOME`) e despesas (`EXPENSE`). O tipo define o efeito financeiro; o valor é sempre positivo. Cada registro referencia um grupo, perfil e categoria e guarda data de referência, vencimento opcional, conclusão opcional, observações e auditoria.
@@ -43,6 +47,30 @@ O banco usa identificadores inteiros estáveis e chaves estrangeiras explícitas
 
 Filtros são representados por `TransactionFilter` e transformados em condições preparadas pelo repositório. Assim, pesquisa e filtros mensais não carregam toda a tabela em memória. O painel usa agregações SQL por mês da `reference_date`, exclui canceladas dos resultados e consulta próximos vencimentos separadamente.
 
+## Recorrências e parcelamentos
+
+`recurring_expenses` guarda a regra mensal e `recurring_expense_occurrences` vincula cada competência
+a exatamente uma linha de `transactions`. A restrição única `(recurring_expense_id, reference_month)`
+protege contra inicializações, cliques ou navegações concorrentes. A aplicação gera do mês corrente até
+12 meses adiante e, ao abrir meses posteriores, estende o horizonte sob demanda. Uma ocorrência editada
+é marcada como `customized`; atualizações da regra alcançam somente ocorrências futuras, pendentes e não
+personalizadas. Regras são desativadas, nunca removidas.
+
+`installment_plans` preserva o valor contratado e a quantidade original. `installments` vincula cada
+número de parcela a uma movimentação de despesa, com unicidade por plano e número. O total em centavos
+é dividido por inteiros e o resto é atribuído, em ordem, às primeiras parcelas. A situação do plano é
+derivada das situações das parcelas: em andamento, concluído, parcialmente cancelado ou cancelado.
+Cancelar restantes altera apenas movimentações pendentes atuais ou futuras e preserva as pagas.
+
+Ambas as origens criam `transactions` do tipo `EXPENSE`. Regra e plano nunca entram diretamente em
+agregações financeiras: esta única fonte de verdade evita dupla contagem. As consultas usam `LEFT JOIN`
+com os vínculos para apresentar `Manual`, `Recorrente` ou `Parcela N de M`.
+
+Vencimentos mensais são sempre calculados a partir do dia do primeiro vencimento e do `YearMonth` de
+destino. Se o dia não existir, usa-se o último dia daquele mês; o ajuste de fevereiro não se propaga.
+O calendário consulta apenas o mês necessário, usando `due_date` e, quando ausente, `reference_date`,
+e reutiliza o resumo financeiro do painel.
+
 ## Localização dos dados
 
 No Windows, a raiz padrão é `%LOCALAPPDATA%\Hestia`, contendo `data`, `attachments`, `backups` e `logs`. A propriedade `hestia.data.dir` ou a variável `HESTIA_DATA_DIR` pode substituir essa raiz. Testes sempre usam diretórios temporários isolados.
@@ -53,8 +81,9 @@ No Windows, a raiz padrão é `%LOCALAPPDATA%\Hestia`, contendo `data`, `attachm
 2. Crie um serviço em `application` para o caso de uso e um contrato de repositório somente quando houver persistência.
 3. Implemente persistência em `infrastructure`; alterações de esquema entram em uma nova migração, nunca modificando uma versão já distribuída.
 4. Crie a tela FXML e um controller pequeno em `presentation`, injetando o serviço durante a composição.
-5. Adicione testes unitários da regra e testes de integração com SQLite temporário.
+5. Adicione testes unitários da regra e testes de integração com SQLite temporário. Operações que criem
+   mais de um registro devem possuir uma fronteira transacional explícita e restrições únicas no banco.
 
 ## Limites do domínio
 
-O Hestia organiza compromissos, receitas e despesas pessoais ou familiares, não patrimônios mantidos por instituições financeiras. Por isso, contas bancárias, carteiras, saldos, cartões, faturas, limites, transferências e integração bancária não fazem parte do domínio. Essa decisão reduz complexidade e mantém o produto centrado no planejamento financeiro familiar. Compras parceladas serão modeladas futuramente como compromissos independentes.
+O Hestia organiza compromissos, receitas e despesas pessoais ou familiares, não patrimônios mantidos por instituições financeiras. Por isso, contas bancárias, carteiras, saldos, cartões, faturas, limites, transferências e integração bancária não fazem parte do domínio. Essa decisão reduz complexidade e mantém o produto centrado no planejamento financeiro familiar. Compras parceladas são compromissos independentes e não contêm instituição, bandeira, número ou qualquer outro conceito de cartão.

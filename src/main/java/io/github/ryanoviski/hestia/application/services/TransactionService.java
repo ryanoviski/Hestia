@@ -6,6 +6,7 @@ import io.github.ryanoviski.hestia.application.repositories.CategoryRepository;
 import io.github.ryanoviski.hestia.application.repositories.ProfileRepository;
 import io.github.ryanoviski.hestia.application.repositories.TransactionRepository;
 import io.github.ryanoviski.hestia.domain.enums.TransactionStatus;
+import io.github.ryanoviski.hestia.domain.enums.TransactionOrigin;
 import io.github.ryanoviski.hestia.domain.exceptions.ValidationException;
 import io.github.ryanoviski.hestia.domain.models.Category;
 import io.github.ryanoviski.hestia.domain.models.Profile;
@@ -50,6 +51,11 @@ public final class TransactionService {
     public Transaction update(long id, TransactionInput input) {
         long householdId = profiles.findDefaultHouseholdId();
         Transaction existing = find(id);
+        if (existing.origin() != TransactionOrigin.MANUAL && input.type() != existing.type())
+            throw new ValidationException("O tipo de uma movimentação gerada não pode ser alterado.");
+        if (existing.origin() == TransactionOrigin.INSTALLMENT
+                && MoneyUtils.toCents(input.amount()) != existing.amountCents())
+            throw new ValidationException("O valor de uma parcela não pode ser alterado nesta versão.");
         Validated validated = validate(input, householdId, existing);
         return repository.update(toTransaction(id, householdId, input, validated.amountCents(),
                 existing.createdAt(), Instant.now(clock)));
@@ -108,7 +114,7 @@ public final class TransactionService {
                 input.description().trim(), cents, input.referenceDate(), input.dueDate(),
                 input.status() == TransactionStatus.SETTLED ? input.settlementDate() : null,
                 input.status(), input.notes() == null || input.notes().isBlank() ? null : input.notes().trim(),
-                createdAt, updatedAt, null, null);
+                createdAt, updatedAt, null, null, TransactionOrigin.MANUAL, null, null);
     }
 
     private record Validated(long amountCents) { }
