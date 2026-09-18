@@ -15,7 +15,8 @@ import java.util.Set;
 
 public final class MigrationRunner {
     private static final List<Migration> MIGRATIONS = List.of(
-            new Migration(1, "initial schema", "/db/migrations/V001__initial_schema.sql")
+            new Migration(1, "initial schema", "/db/migrations/V001__initial_schema.sql"),
+            new Migration(2, "create transactions", "/db/migrations/V002__create_transactions.sql")
     );
 
     private final ConnectionFactory connectionFactory;

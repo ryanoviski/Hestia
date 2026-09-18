@@ -12,6 +12,7 @@ class ViewResourcesTest {
     @ValueSource(strings = {
             "/fxml/main-view.fxml", "/fxml/dashboard-view.fxml",
             "/fxml/profiles-view.fxml", "/fxml/placeholder-view.fxml",
+            "/fxml/categories-view.fxml", "/fxml/transactions-view.fxml",
             "/styles/main.css"
     })
     void requiredResourceIsPackaged(String path) throws Exception {

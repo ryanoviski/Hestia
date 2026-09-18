@@ -12,6 +12,7 @@ import java.sql.Statement;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public final class SqliteProfileRepository implements ProfileRepository {
     private final ConnectionFactory connectionFactory;
@@ -107,6 +108,19 @@ public final class SqliteProfileRepository implements ProfileRepository {
             return result.getLong(1);
         } catch (SQLException exception) {
             throw new DatabaseException("Could not find the default household", exception);
+        }
+    }
+
+    @Override
+    public Optional<Profile> findById(long profileId) {
+        try (var connection = connectionFactory.openConnection();
+             var statement = connection.prepareStatement("SELECT * FROM profiles WHERE id = ?")) {
+            statement.setLong(1, profileId);
+            try (var result = statement.executeQuery()) {
+                return result.next() ? Optional.of(map(result)) : Optional.empty();
+            }
+        } catch (SQLException exception) {
+            throw new DatabaseException("Could not find profile", exception);
         }
     }
 

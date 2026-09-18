@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<HBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="io.github.ryanoviski.hestia.presentation.controllers.CategoriesController"
+      spacing="20" styleClass="view">
+    <VBox spacing="14" HBox.hgrow="ALWAYS">
+        <VBox spacing="5"><Label text="Categorias financeiras" styleClass="view-heading"/><Label text="Organize receitas e despesas com categorias padrão ou personalizadas." styleClass="view-subtitle"/></VBox>
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <TextField fx:id="searchField" promptText="Pesquisar pelo nome" HBox.hgrow="ALWAYS"/>
+            <ComboBox fx:id="filterType" prefWidth="155"/>
+            <CheckBox fx:id="includeInactive" text="Mostrar inativas"/>
+            <Button text="Limpar" onAction="#clearCategoryFilters" styleClass="secondary-button"/>
+        </HBox>
+        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="profiles-scroll">
+            <VBox fx:id="categoryList" spacing="9" styleClass="profiles-list">
+                <Label fx:id="emptyState" text="Nenhuma categoria corresponde aos filtros escolhidos." styleClass="empty-state" wrapText="true"/>
+            </VBox>
+        </ScrollPane>
+    </VBox>
+    <VBox prefWidth="330" spacing="12" styleClass="form-card">
+        <Label fx:id="formTitle" text="Nova categoria" styleClass="panel-title"/>
+        <Label text="Nome" styleClass="field-label"/><TextField fx:id="nameField" promptText="Ex.: Pets"/>
+        <Label text="Tipo" styleClass="field-label"/><ComboBox fx:id="typeField" maxWidth="Infinity"/>
+        <Label text="Cor (opcional)" styleClass="field-label"/><TextField fx:id="colorField" promptText="#3D8B7D"/>
+        <Label fx:id="formMessage" wrapText="true"/>
+        <Button text="Salvar categoria" onAction="#saveCategory" maxWidth="Infinity" styleClass="primary-button"/>
+        <Button fx:id="cancelEditButton" text="Cancelar edição" onAction="#cancelEdit" visible="false" managed="false" maxWidth="Infinity" styleClass="secondary-button"/>
+    </VBox>
+</HBox>

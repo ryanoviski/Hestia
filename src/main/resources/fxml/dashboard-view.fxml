@@ -1,48 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.FlowPane?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Priority?>
-<?import javafx.scene.layout.Region?>
-<?import javafx.scene.layout.VBox?>
-
-<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" spacing="22" styleClass="view">
-    <VBox spacing="5">
-        <Label text="Olá! Este é o seu espaço financeiro." styleClass="view-heading" />
-        <Label text="Acompanhe a organização da sua família com clareza e tranquilidade." styleClass="view-subtitle" />
-    </VBox>
-    <FlowPane hgap="16" vgap="16" prefWrapLength="850">
-        <VBox prefWidth="245" spacing="10" styleClass="summary-card,income-card">
-            <Label text="RECEITAS DO MÊS" styleClass="card-label" />
-            <Label text="Sem lançamentos" styleClass="empty-value" />
-            <Label text="Nenhuma receita registrada neste mês." wrapText="true" styleClass="card-help" />
-        </VBox>
-        <VBox prefWidth="245" spacing="10" styleClass="summary-card,expense-card">
-            <Label text="DESPESAS DO MÊS" styleClass="card-label" />
-            <Label text="Sem lançamentos" styleClass="empty-value" />
-            <Label text="Nenhuma despesa registrada neste mês." wrapText="true" styleClass="card-help" />
-        </VBox>
-        <VBox prefWidth="245" spacing="10" styleClass="summary-card,result-card">
-            <Label text="RESULTADO MENSAL" styleClass="card-label" />
-            <Label text="Aguardando dados" styleClass="empty-value" />
-            <Label text="O resultado aparecerá após os primeiros lançamentos." wrapText="true" styleClass="card-help" />
-        </VBox>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="io.github.ryanoviski.hestia.presentation.controllers.DashboardController"
+      spacing="18" styleClass="view">
+    <HBox alignment="CENTER_LEFT"><VBox spacing="5" HBox.hgrow="ALWAYS"><Label text="Seu mês financeiro" styleClass="view-heading"/><Label text="Valores realizados e planejados a partir das suas movimentações." styleClass="view-subtitle"/></VBox><TextField fx:id="monthField" promptText="MM/AAAA" prefWidth="105"/><Button text="Atualizar" onAction="#refresh" styleClass="secondary-button"/></HBox>
+    <FlowPane hgap="12" vgap="12" prefWrapLength="900">
+        <VBox prefWidth="185" spacing="7" styleClass="summary-card,income-card"><Label text="RECEITAS RECEBIDAS" styleClass="card-label"/><Label fx:id="receivedIncome" styleClass="metric-value"/><Label fx:id="expectedIncome" styleClass="card-help"/></VBox>
+        <VBox prefWidth="185" spacing="7" styleClass="summary-card,expense-card"><Label text="DESPESAS PAGAS" styleClass="card-label"/><Label fx:id="paidExpenses" styleClass="metric-value"/><Label fx:id="pendingExpenses" styleClass="card-help"/></VBox>
+        <VBox prefWidth="185" spacing="7" styleClass="summary-card,expense-card"><Label text="DESPESAS VENCIDAS" styleClass="card-label"/><Label fx:id="overdueExpenses" styleClass="metric-value"/><Label text="Pendentes com vencimento anterior a hoje" wrapText="true" styleClass="card-help"/></VBox>
+        <VBox prefWidth="185" spacing="7" styleClass="summary-card,result-card"><Label text="RESULTADOS" styleClass="card-label"/><Label fx:id="realizedResult" styleClass="metric-value"/><Label fx:id="projectedResult" styleClass="card-help"/></VBox>
     </FlowPane>
-    <HBox spacing="16" VBox.vgrow="ALWAYS">
-        <VBox spacing="14" styleClass="panel" HBox.hgrow="ALWAYS">
-            <Label text="Próximos vencimentos" styleClass="panel-title" />
-            <Region VBox.vgrow="ALWAYS" />
-            <Label text="Seus próximos compromissos aparecerão aqui." styleClass="empty-title" />
-            <Label text="Cadastre contas e parcelamentos para acompanhar datas importantes." wrapText="true" styleClass="empty-description" />
-            <Region VBox.vgrow="ALWAYS" />
-        </VBox>
-        <VBox spacing="14" prefWidth="330" styleClass="panel">
-            <Label text="Distribuição das despesas" styleClass="panel-title" />
-            <Region VBox.vgrow="ALWAYS" />
-            <Label text="Ainda não há dados para exibir." styleClass="empty-title" />
-            <Label text="O resumo por categoria será mostrado aqui." wrapText="true" styleClass="empty-description" />
-            <Region VBox.vgrow="ALWAYS" />
-        </VBox>
+    <HBox spacing="14" VBox.vgrow="ALWAYS">
+        <VBox spacing="12" styleClass="panel" HBox.hgrow="ALWAYS"><Label text="Próximos vencimentos" styleClass="panel-title"/><VBox fx:id="upcomingList" spacing="8"/><Label fx:id="upcomingEmpty" text="Nenhum vencimento futuro pendente." styleClass="empty-description"/></VBox>
+        <VBox spacing="12" prefWidth="350" styleClass="panel"><Label text="Despesas por categoria" styleClass="panel-title"/><VBox fx:id="categoryTotals" spacing="8"/><Label fx:id="categoryEmpty" text="Nenhuma despesa registrada neste mês." styleClass="empty-description"/></VBox>
     </HBox>
 </VBox>

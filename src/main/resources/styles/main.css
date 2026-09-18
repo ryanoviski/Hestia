@@ -58,3 +58,20 @@
 .form-success { -fx-text-fill: #28705c; }
 .placeholder { -fx-padding: 80; }
 .placeholder-mark { -fx-background-color: -hestia-primary-soft; -fx-background-radius: 18; }
+.category-color { -fx-min-width: 10; -fx-min-height: 38; -fx-background-color: -hestia-primary; -fx-background-radius: 6; }
+.filter-bar { -fx-background-color: white; -fx-padding: 12; -fx-background-radius: 10; -fx-border-color: -hestia-border; -fx-border-radius: 10; -fx-alignment: CENTER_LEFT; }
+.transaction-row { -fx-background-color: white; -fx-border-color: -hestia-border; -fx-border-radius: 9; -fx-background-radius: 9; -fx-padding: 12; }
+.transaction-description { -fx-font-weight: bold; }
+.transaction-amount { -fx-font-weight: bold; -fx-min-width: 105; -fx-alignment: CENTER-RIGHT; }
+.transaction-cancelled { -fx-opacity: 0.62; }
+.transaction-overdue { -fx-border-color: #b65c4b; -fx-border-width: 1 1 1 4; }
+.status-pill { -fx-padding: 4 8; -fx-background-radius: 10; -fx-font-size: 11px; -fx-font-weight: bold; }
+.status-pending { -fx-background-color: #f4ead3; -fx-text-fill: #75581d; }
+.status-settled { -fx-background-color: #dcebe7; -fx-text-fill: #285f59; }
+.status-cancelled { -fx-background-color: #ecefed; -fx-text-fill: #64716e; }
+.status-overdue { -fx-background-color: #f5dfda; -fx-text-fill: #963e30; }
+.table-action { -fx-background-color: transparent; -fx-text-fill: -hestia-primary; -fx-padding: 5 7; -fx-cursor: hand; }
+.table-action:hover { -fx-background-color: -hestia-primary-soft; }
+.metric-value { -fx-font-size: 19px; -fx-font-weight: bold; }
+.dialog-pane { -fx-background-color: -hestia-bg; }
+.text-area { -fx-background-color: #f9fbfa; -fx-border-color: -hestia-border; -fx-border-radius: 7; }

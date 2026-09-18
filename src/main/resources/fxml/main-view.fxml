@@ -30,6 +30,7 @@
             <Button text="Relatórios" userData="reports" onAction="#navigate" styleClass="nav-button" />
             <Label text="GESTÃO" styleClass="nav-section" />
             <Button text="Perfis" userData="profiles" onAction="#navigate" styleClass="nav-button" />
+            <Button text="Categorias" userData="categories" onAction="#navigate" styleClass="nav-button" />
             <Button text="Configurações" userData="settings" onAction="#navigate" styleClass="nav-button" />
         </VBox>
     </left>

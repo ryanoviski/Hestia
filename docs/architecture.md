@@ -17,7 +17,21 @@ presentation → application → domain
 - **config**: resolve os diretórios locais e compõe as dependências na inicialização.
 - **util**: reservado para utilitários realmente compartilhados; não há arquivo artificial nesta etapa.
 
-O fluxo de cadastro de perfil é: `ProfilesController` → `ProfileService` → `ProfileRepository` → `SqliteProfileRepository` → SQLite. A inicialização monta explicitamente essas dependências em `ApplicationBootstrap`, sem estado global mutável.
+O fluxo comum é `Controller` → `Service` → contrato de `Repository` → implementação SQLite. Por exemplo, o cadastro financeiro percorre `TransactionsController` → `TransactionService` → `TransactionRepository` → `SqliteTransactionRepository`. A inicialização monta explicitamente essas dependências em `ApplicationBootstrap`, sem estado global mutável e sem controllers acoplados entre si.
+
+## Movimentações e situações
+
+`Transaction` representa receitas (`INCOME`) e despesas (`EXPENSE`). O tipo define o efeito financeiro; o valor é sempre positivo. Cada registro referencia um grupo, perfil e categoria e guarda data de referência, vencimento opcional, conclusão opcional, observações e auditoria.
+
+A situação persistida é uma das seguintes:
+
+- `PENDING`: prevista para receita e pendente para despesa;
+- `SETTLED`: recebida para receita e paga para despesa;
+- `CANCELLED`: cancelada para ambos os tipos.
+
+“Vencida” não é uma situação persistida. É calculada quando uma despesa está pendente e seu vencimento é anterior à data atual. Serviços recebem `Clock`, permitindo testes determinísticos.
+
+Cancelamentos são alterações de situação, nunca exclusões físicas. Perfis e categorias inativos permanecem associados ao histórico, mas não podem ser escolhidos em novos registros. Categorias padrão são globais e somente leitura; categorias personalizadas pertencem ao grupo atual.
 
 ## Persistência e migrações
 
@@ -25,7 +39,9 @@ Cada operação abre sua própria conexão e a fecha com `try-with-resources`. T
 
 As migrações são scripts SQL versionados em `src/main/resources/db/migrations`. `MigrationRunner` aplica versões pendentes em ordem e registra versão, descrição e instante UTC em `schema_history`. Cada migração é transacional; uma falha causa rollback e interrompe a inicialização. Os dados iniciais são inseridos separadamente e de forma idempotente.
 
-O banco usa identificadores inteiros estáveis e chaves estrangeiras explícitas. Os instantes de auditoria são armazenados como texto ISO-8601 em UTC e convertidos para `Instant`. Datas civis futuras deverão usar `LocalDate`. Valores monetários futuros usarão `BigDecimal` no Java e centavos em colunas inteiras no SQLite, nunca `double` ou `float`.
+O banco usa identificadores inteiros estáveis e chaves estrangeiras explícitas. Os instantes de auditoria são armazenados como texto ISO-8601 em UTC e convertidos para `Instant`. Referência, vencimento e conclusão usam `LocalDate` no Java e ISO-8601 no SQLite. Valores monetários usam `BigDecimal` no Java e centavos em colunas inteiras no SQLite, nunca `double` ou `float`. `MoneyUtils` concentra leitura brasileira, conversão exata e formatação `pt-BR`.
+
+Filtros são representados por `TransactionFilter` e transformados em condições preparadas pelo repositório. Assim, pesquisa e filtros mensais não carregam toda a tabela em memória. O painel usa agregações SQL por mês da `reference_date`, exclui canceladas dos resultados e consulta próximos vencimentos separadamente.
 
 ## Localização dos dados
 

@@ -1,6 +1,7 @@
 package io.github.ryanoviski.hestia.presentation.controllers;
 
 import io.github.ryanoviski.hestia.config.ApplicationContext;
+import io.github.ryanoviski.hestia.domain.enums.TransactionType;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -31,19 +32,40 @@ public final class MainController {
         Button button = (Button) event.getSource();
         String destination = (String) button.getUserData();
         select(button);
-        if ("dashboard".equals(destination)) {
-            showDashboard();
-        } else if ("profiles".equals(destination)) {
-            showProfiles();
-        } else {
-            showPlaceholder(button.getText().trim());
+        switch (destination) {
+            case "dashboard" -> showDashboard();
+            case "profiles" -> showProfiles();
+            case "categories" -> showCategories();
+            case "transactions" -> showTransactions("Movimentações", null, false);
+            case "income" -> showTransactions("Receitas", TransactionType.INCOME, false);
+            case "bills" -> showTransactions("Contas a pagar", TransactionType.EXPENSE, true);
+            default -> showPlaceholder(button.getText().trim());
         }
     }
 
     private void showDashboard() {
         pageTitle.setText("Painel");
-        loadContent("/fxml/dashboard-view.fxml", null);
+        loadContent("/fxml/dashboard-view.fxml", loader -> {
+            DashboardController controller = loader.getController();
+            controller.configure(context.dashboardService());
+        });
         selectByDestination("dashboard");
+    }
+
+    private void showCategories() {
+        pageTitle.setText("Categorias");
+        loadContent("/fxml/categories-view.fxml", loader -> {
+            CategoriesController controller = loader.getController();
+            controller.configure(context.categoryService());
+        });
+    }
+
+    private void showTransactions(String title, TransactionType fixedType, boolean payableMode) {
+        pageTitle.setText(title);
+        loadContent("/fxml/transactions-view.fxml", loader -> {
+            TransactionsController controller = loader.getController();
+            controller.configure(context, fixedType, payableMode);
+        });
     }
 
     private void showProfiles() {
