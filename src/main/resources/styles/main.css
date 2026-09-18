@@ -1,0 +1,60 @@
+.root {
+    -hestia-bg: #f5f7f5;
+    -hestia-surface: #ffffff;
+    -hestia-sidebar: #173d3a;
+    -hestia-primary: #2f766e;
+    -hestia-primary-soft: #dcebe7;
+    -hestia-text: #263532;
+    -hestia-muted: #6b7d79;
+    -hestia-border: #dfe7e4;
+    -fx-font-family: "Segoe UI", "Arial", sans-serif;
+    -fx-font-size: 14px;
+    -fx-text-fill: -hestia-text;
+}
+
+.app-shell, .content-area { -fx-background-color: -hestia-bg; }
+.sidebar { -fx-background-color: -hestia-sidebar; -fx-padding: 24 16; -fx-spacing: 4; }
+.brand { -fx-padding: 0 8 26 8; }
+.brand-mark { -fx-background-color: #e4b86c; -fx-background-radius: 12; -fx-min-width: 42; -fx-min-height: 42; }
+.brand-letter { -fx-text-fill: #173d3a; -fx-font-size: 22px; -fx-font-weight: bold; }
+.brand-name { -fx-text-fill: white; -fx-font-size: 21px; -fx-font-weight: bold; }
+.brand-caption { -fx-text-fill: #b8cfca; -fx-font-size: 11px; }
+.nav-section { -fx-text-fill: #87aaa4; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 16 12 7 12; }
+.nav-button { -fx-background-color: transparent; -fx-text-fill: #dce9e6; -fx-alignment: CENTER_LEFT; -fx-padding: 10 14; -fx-background-radius: 8; -fx-cursor: hand; -fx-max-width: Infinity; }
+.nav-button:hover { -fx-background-color: rgba(255,255,255,0.08); }
+.nav-button-active { -fx-background-color: #2f766e; -fx-text-fill: white; -fx-font-weight: bold; }
+.topbar { -fx-background-color: white; -fx-padding: 20 30; -fx-border-color: transparent transparent -hestia-border transparent; }
+.page-title { -fx-font-size: 20px; -fx-font-weight: bold; }
+.content-area { -fx-padding: 0; }
+.view { -fx-padding: 28 30 30 30; }
+.view-heading { -fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: -hestia-text; }
+.view-subtitle, .card-help, .empty-description, .field-hint { -fx-text-fill: -hestia-muted; }
+.summary-card, .panel, .form-card { -fx-background-color: -hestia-surface; -fx-background-radius: 12; -fx-border-color: -hestia-border; -fx-border-radius: 12; -fx-padding: 20; }
+.summary-card { -fx-border-width: 1 1 1 4; }
+.income-card { -fx-border-color: -hestia-border -hestia-border -hestia-border #4b9b83; }
+.expense-card { -fx-border-color: -hestia-border -hestia-border -hestia-border #cb7865; }
+.result-card { -fx-border-color: -hestia-border -hestia-border -hestia-border #5d8299; }
+.card-label { -fx-text-fill: -hestia-muted; -fx-font-size: 11px; -fx-font-weight: bold; }
+.empty-value { -fx-font-size: 18px; -fx-font-weight: bold; }
+.card-help { -fx-font-size: 12px; }
+.panel-title { -fx-font-size: 16px; -fx-font-weight: bold; }
+.empty-title { -fx-font-weight: bold; -fx-alignment: CENTER; }
+.profiles-scroll { -fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent; }
+.profiles-scroll > .viewport { -fx-background-color: transparent; }
+.profiles-list { -fx-padding: 2; }
+.empty-state { -fx-background-color: -hestia-surface; -fx-border-color: -hestia-border; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 24; -fx-text-fill: -hestia-muted; }
+.profile-row { -fx-background-color: white; -fx-border-color: -hestia-border; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 14 16; }
+.profile-color { -fx-min-width: 12; -fx-min-height: 42; -fx-background-radius: 6; }
+.profile-name { -fx-font-weight: bold; }
+.profile-meta { -fx-font-size: 12px; -fx-text-fill: -hestia-muted; }
+.field-label { -fx-font-size: 12px; -fx-font-weight: bold; }
+.field-hint { -fx-font-size: 11px; }
+.text-field, .choice-box { -fx-background-color: #f9fbfa; -fx-border-color: -hestia-border; -fx-border-radius: 7; -fx-background-radius: 7; -fx-padding: 9; }
+.text-field:focused, .choice-box:focused { -fx-border-color: -hestia-primary; }
+.primary-button { -fx-background-color: -hestia-primary; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 11 16; -fx-cursor: hand; }
+.primary-button:hover { -fx-background-color: #285f59; }
+.secondary-button { -fx-background-color: -hestia-primary-soft; -fx-text-fill: #285f59; -fx-background-radius: 7; -fx-cursor: hand; }
+.form-error { -fx-text-fill: #a33f35; }
+.form-success { -fx-text-fill: #28705c; }
+.placeholder { -fx-padding: 80; }
+.placeholder-mark { -fx-background-color: -hestia-primary-soft; -fx-background-radius: 18; }

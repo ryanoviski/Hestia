@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="io.github.ryanoviski.hestia.presentation.controllers.PlaceholderController"
+      alignment="CENTER" spacing="10" styleClass="view,placeholder">
+    <Region prefHeight="36" prefWidth="36" styleClass="placeholder-mark" />
+    <Label fx:id="moduleName" styleClass="view-heading" />
+    <Label text="Esta funcionalidade será implementada em uma próxima etapa." styleClass="view-subtitle" />
+</VBox>

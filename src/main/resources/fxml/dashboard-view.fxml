@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" spacing="22" styleClass="view">
+    <VBox spacing="5">
+        <Label text="Olá! Este é o seu espaço financeiro." styleClass="view-heading" />
+        <Label text="Acompanhe a organização da sua família com clareza e tranquilidade." styleClass="view-subtitle" />
+    </VBox>
+    <FlowPane hgap="16" vgap="16" prefWrapLength="850">
+        <VBox prefWidth="245" spacing="10" styleClass="summary-card,income-card">
+            <Label text="RECEITAS DO MÊS" styleClass="card-label" />
+            <Label text="Sem lançamentos" styleClass="empty-value" />
+            <Label text="Nenhuma receita registrada neste mês." wrapText="true" styleClass="card-help" />
+        </VBox>
+        <VBox prefWidth="245" spacing="10" styleClass="summary-card,expense-card">
+            <Label text="DESPESAS DO MÊS" styleClass="card-label" />
+            <Label text="Sem lançamentos" styleClass="empty-value" />
+            <Label text="Nenhuma despesa registrada neste mês." wrapText="true" styleClass="card-help" />
+        </VBox>
+        <VBox prefWidth="245" spacing="10" styleClass="summary-card,result-card">
+            <Label text="RESULTADO MENSAL" styleClass="card-label" />
+            <Label text="Aguardando dados" styleClass="empty-value" />
+            <Label text="O resultado aparecerá após os primeiros lançamentos." wrapText="true" styleClass="card-help" />
+        </VBox>
+    </FlowPane>
+    <HBox spacing="16" VBox.vgrow="ALWAYS">
+        <VBox spacing="14" styleClass="panel" HBox.hgrow="ALWAYS">
+            <Label text="Próximos vencimentos" styleClass="panel-title" />
+            <Region VBox.vgrow="ALWAYS" />
+            <Label text="Seus próximos compromissos aparecerão aqui." styleClass="empty-title" />
+            <Label text="Cadastre contas e parcelamentos para acompanhar datas importantes." wrapText="true" styleClass="empty-description" />
+            <Region VBox.vgrow="ALWAYS" />
+        </VBox>
+        <VBox spacing="14" prefWidth="330" styleClass="panel">
+            <Label text="Distribuição das despesas" styleClass="panel-title" />
+            <Region VBox.vgrow="ALWAYS" />
+            <Label text="Ainda não há dados para exibir." styleClass="empty-title" />
+            <Label text="O resumo por categoria será mostrado aqui." wrapText="true" styleClass="empty-description" />
+            <Region VBox.vgrow="ALWAYS" />
+        </VBox>
+    </HBox>
+</VBox>

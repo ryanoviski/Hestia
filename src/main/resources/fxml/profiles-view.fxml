@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ChoiceBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.VBox?>
+
+<HBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="io.github.ryanoviski.hestia.presentation.controllers.ProfilesController"
+      spacing="20" styleClass="view">
+    <VBox spacing="16" HBox.hgrow="ALWAYS">
+        <VBox spacing="5">
+            <Label text="Perfis da família" styleClass="view-heading" />
+            <Label text="Organize até cinco perfis ativos para representar pessoas ou o uso compartilhado." wrapText="true" styleClass="view-subtitle" />
+        </VBox>
+        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="profiles-scroll">
+            <VBox fx:id="profilesList" spacing="10" styleClass="profiles-list">
+                <Label fx:id="emptyState" text="Nenhum perfil cadastrado. Use o formulário ao lado para começar." wrapText="true" styleClass="empty-state" />
+            </VBox>
+        </ScrollPane>
+    </VBox>
+    <VBox prefWidth="340" spacing="13" styleClass="form-card">
+        <Label text="Novo perfil" styleClass="panel-title" />
+        <Label text="Nome" styleClass="field-label" />
+        <TextField fx:id="nameField" promptText="Ex.: Ana" />
+        <Label text="Tipo" styleClass="field-label" />
+        <ChoiceBox fx:id="typeField" maxWidth="Infinity" />
+        <Label text="Cor (opcional)" styleClass="field-label" />
+        <TextField fx:id="colorField" promptText="#3D8B7D" />
+        <Label text="Use uma cor hexadecimal com seis caracteres." wrapText="true" styleClass="field-hint" />
+        <Label fx:id="formMessage" wrapText="true" />
+        <Button text="Cadastrar perfil" maxWidth="Infinity" onAction="#createProfile" styleClass="primary-button" />
+    </VBox>
+</HBox>
