@@ -15,6 +15,8 @@ class ViewResourcesTest {
             "/fxml/categories-view.fxml", "/fxml/transactions-view.fxml",
             "/fxml/recurring-expenses-view.fxml", "/fxml/installment-plans-view.fxml",
             "/fxml/calendar-view.fxml", "/db/migrations/V003__create_financial_commitments.sql",
+            "/fxml/documents-view.fxml", "/fxml/settings-view.fxml",
+            "/db/migrations/V004__create_attachments.sql",
             "/styles/main.css"
     })
     void requiredResourceIsPackaged(String path) throws Exception {

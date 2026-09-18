@@ -71,9 +71,45 @@ destino. Se o dia não existir, usa-se o último dia daquele mês; o ajuste de f
 O calendário consulta apenas o mês necessário, usando `due_date` e, quando ausente, `reference_date`,
 e reutiliza o resumo financeiro do painel.
 
+## Anexos e integridade
+
+`attachments` guarda somente metadados e uma `storage_key` relativa. Exatamente um alvo é obrigatório:
+movimentação ou perfil. PDFs e imagens nunca são BLOBs. O armazenamento físico usa
+`attachments/household-{id}/AAAA/MM/{UUID}.{extensão}`, sem incorporar o nome fornecido pelo usuário.
+Todo caminho é resolvido, normalizado e confirmado dentro da raiz; caminhos absolutos, `..`, links
+simbólicos inesperados e sobrescritas são rejeitados.
+
+`FileValidationService` compara extensão com as assinaturas PDF, PNG e JPEG, impõe o limite configurado,
+mede o arquivo e calcula SHA-256. A importação copia primeiro para `temp/`, revalida a cópia e só então
+move para o destino. Se a persistência falhar, o arquivo é compensado. A remoção faz o movimento inverso
+para quarentena antes de excluir os metadados. O diagnóstico compara registros, arquivos, hashes e
+temporários sem remover órfãos automaticamente.
+
+Imagens são reduzidas antes de chegar ao `ImageView`. PDFs são abertos e renderizados com PDFBox em
+tarefa de segundo plano; cada mudança de página invalida resultados antigos. A interface permite zoom,
+navegação, abertura externa e exportação sem revelar a chave física.
+
+## Backup e restauração
+
+O backup `.hestia-backup` é um contêiner ZIP com `manifest.json`, snapshot `database/hestia.db` e os
+anexos válidos. `VACUUM INTO` produz o snapshot consistente e `PRAGMA integrity_check` o valida antes da
+compactação. O manifesto registra versão do formato, aplicação e esquema, instante, grupo e, para cada
+arquivo, caminho relativo, tamanho e SHA-256. Logs, cache, temporários, preferências com caminhos externos
+e backups anteriores não entram no pacote.
+
+Zip4j oferece proteção opcional AES-256; nenhuma senha é persistida ou registrada. Backups automáticos
+são explicitamente habilitados pelo usuário, não usam senha nesta versão, executam no máximo uma vez ao
+dia e aplicam retenção apenas a nomes gerados pelo Hestia.
+
+A restauração valida extensão, estrutura ZIP, quantidade e tamanhos, protege contra ZIP Slip, confere
+manifesto, hashes, integridade do SQLite e compatibilidade do esquema antes de tocar nos dados ativos.
+Ela extrai em área temporária e cria primeiro um backup de segurança. Banco e anexos anteriores são
+mantidos em uma segunda área de reversão durante a substituição; qualquer falha restaura ambos. Bancos
+mais antigos são aceitos e passam pelas migrações na inicialização seguinte; esquemas futuros são rejeitados.
+
 ## Localização dos dados
 
-No Windows, a raiz padrão é `%LOCALAPPDATA%\Hestia`, contendo `data`, `attachments`, `backups` e `logs`. A propriedade `hestia.data.dir` ou a variável `HESTIA_DATA_DIR` pode substituir essa raiz. Testes sempre usam diretórios temporários isolados.
+No Windows, a raiz padrão é `%LOCALAPPDATA%\Hestia`, contendo `data`, `attachments`, `backups`, `cache`, `temp` e `logs`. A propriedade `hestia.data.dir` ou a variável `HESTIA_DATA_DIR` pode substituir essa raiz. Testes sempre usam diretórios temporários isolados.
 
 ## Como adicionar um módulo
 

@@ -16,6 +16,9 @@
         <javafx.version>21.0.8</javafx.version>
         <junit.version>5.13.4</junit.version>
         <slf4j.version>2.0.17</slf4j.version>
+        <pdfbox.version>3.0.8</pdfbox.version>
+        <zip4j.version>2.11.6</zip4j.version>
+        <jackson.version>2.22.0</jackson.version>
     </properties>
 
     <dependencies>
@@ -27,6 +30,11 @@
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-fxml</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-swing</artifactId>
             <version>${javafx.version}</version>
         </dependency>
         <dependency>
@@ -44,6 +52,26 @@
             <artifactId>logback-classic</artifactId>
             <version>1.5.18</version>
             <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>${pdfbox.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.lingala.zip4j</groupId>
+            <artifactId>zip4j</artifactId>
+            <version>${zip4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

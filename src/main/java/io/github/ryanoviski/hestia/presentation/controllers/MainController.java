@@ -42,6 +42,8 @@ public final class MainController {
             case "recurring" -> showRecurring();
             case "installments" -> showInstallments();
             case "calendar" -> showCalendar();
+            case "documents" -> showDocuments();
+            case "settings" -> showSettings();
             default -> showPlaceholder(button.getText().trim());
         }
     }
@@ -75,13 +77,15 @@ public final class MainController {
         pageTitle.setText("Perfis");
         loadContent("/fxml/profiles-view.fxml", loader -> {
             ProfilesController controller = loader.getController();
-            controller.configure(context.profileService());
+            controller.configure(context);
         });
     }
 
     private void showRecurring() { pageTitle.setText("Recorrências"); loadContent("/fxml/recurring-expenses-view.fxml", loader -> ((RecurringExpensesController)loader.getController()).configure(context)); }
     private void showInstallments() { pageTitle.setText("Parcelamentos"); loadContent("/fxml/installment-plans-view.fxml", loader -> ((InstallmentPlansController)loader.getController()).configure(context)); }
     private void showCalendar() { pageTitle.setText("Calendário"); loadContent("/fxml/calendar-view.fxml", loader -> ((CalendarController)loader.getController()).configure(context)); }
+    private void showDocuments() { pageTitle.setText("Documentos"); loadContent("/fxml/documents-view.fxml", loader -> ((DocumentsController)loader.getController()).configure(context)); }
+    private void showSettings() { pageTitle.setText("Configurações"); loadContent("/fxml/settings-view.fxml", loader -> ((SettingsController)loader.getController()).configure(context)); }
 
     private void showPlaceholder(String title) {
         pageTitle.setText(title);

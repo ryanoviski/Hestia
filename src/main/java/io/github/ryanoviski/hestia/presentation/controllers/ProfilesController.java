@@ -1,6 +1,9 @@
 package io.github.ryanoviski.hestia.presentation.controllers;
 
 import io.github.ryanoviski.hestia.application.services.ProfileService;
+import io.github.ryanoviski.hestia.config.ApplicationContext;
+import io.github.ryanoviski.hestia.domain.enums.DocumentType;
+import javafx.stage.FileChooser;
 import io.github.ryanoviski.hestia.domain.enums.ProfileType;
 import io.github.ryanoviski.hestia.domain.exceptions.ValidationException;
 import io.github.ryanoviski.hestia.domain.models.Profile;
@@ -28,6 +31,7 @@ public final class ProfilesController {
     @FXML private TextField colorField;
 
     private ProfileService service;
+    private ApplicationContext context;
 
     @FXML
     private void initialize() {
@@ -35,8 +39,9 @@ public final class ProfilesController {
         typeField.setValue(ProfileType.PERSON);
     }
 
-    public void configure(ProfileService service) {
-        this.service = service;
+    public void configure(ApplicationContext context) {
+        this.context = context;
+        this.service = context.profileService();
         refresh();
     }
 
@@ -106,7 +111,25 @@ public final class ProfilesController {
             });
             row.getChildren().add(deactivate);
         }
+        Button documents = new Button("Documentos");
+        documents.getStyleClass().add("secondary-button");
+        documents.setOnAction(event -> addDocument(profile));
+        row.getChildren().add(documents);
         return row;
+    }
+
+    private void addDocument(Profile profile) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Adicionar documento a " + profile.name());
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF e imagens", "*.pdf", "*.png", "*.jpg", "*.jpeg"));
+        var file = chooser.showOpenDialog(profilesList.getScene().getWindow());
+        if (file == null) return;
+        try {
+            context.attachmentService().importForProfile(profile.id(), DocumentType.OTHER, null, file.toPath());
+            showMessage("Documento adicionado ao perfil.", false);
+        } catch (RuntimeException exception) {
+            showMessage(exception.getMessage(), true);
+        }
     }
 
     private void clearMessage() {

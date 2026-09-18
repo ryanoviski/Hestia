@@ -30,7 +30,7 @@ class TransactionMigrationTest {
         new MigrationRunner(factory).migrate();
 
         try (var connection=factory.openConnection()) {
-            assertThat(queryInt(connection,"SELECT COUNT(*) FROM schema_history")).isEqualTo(3);
+            assertThat(queryInt(connection,"SELECT COUNT(*) FROM schema_history")).isEqualTo(4);
             assertThat(queryInt(connection,"SELECT COUNT(*) FROM profiles WHERE name='Ana'")).isEqualTo(1);
             assertThat(queryInt(connection,"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='transactions'")).isEqualTo(1);
             assertThat(queryInt(connection,"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='recurring_expenses'")).isEqualTo(1);

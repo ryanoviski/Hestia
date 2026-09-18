@@ -22,6 +22,9 @@ logs/
 data/
 attachments/
 backups/
+cache/
+temp/
+*.hestia-backup
 .hestia/
 
 # Temporary files

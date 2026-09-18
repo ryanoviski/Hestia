@@ -6,6 +6,8 @@ import io.github.ryanoviski.hestia.config.ApplicationContext;
 import io.github.ryanoviski.hestia.domain.enums.TransactionStatus;
 import io.github.ryanoviski.hestia.domain.enums.TransactionType;
 import io.github.ryanoviski.hestia.domain.enums.TransactionOrigin;
+import io.github.ryanoviski.hestia.domain.enums.DocumentType;
+import io.github.ryanoviski.hestia.application.dto.AttachmentFilter;
 import io.github.ryanoviski.hestia.domain.exceptions.ValidationException;
 import io.github.ryanoviski.hestia.domain.models.Category;
 import io.github.ryanoviski.hestia.domain.models.Profile;
@@ -21,6 +23,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
+import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,6 +114,7 @@ public final class TransactionsController {
                 () -> changeSettlement(item));
         Button cancel = action("Cancelar", () -> cancel(item));
         HBox actions = new HBox(6, view, edit);
+        actions.getChildren().add(action("Anexos", () -> attachments(item)));
         if (item.origin() != TransactionOrigin.MANUAL) actions.getChildren().add(action("Ver origem", () -> viewOrigin(item)));
         if (item.status() != TransactionStatus.CANCELLED) actions.getChildren().add(settle);
         if (item.status() != TransactionStatus.CANCELLED) actions.getChildren().add(cancel);
@@ -192,6 +196,38 @@ public final class TransactionsController {
                 + "\nIdentificador da origem: " + item.originId()
                 + "\n\nUse Recorrências ou Parcelamentos para administrar a origem sem alterar o histórico desta movimentação.");
         alert.showAndWait();
+    }
+    private void attachments(Transaction item) {
+        Dialog<Void> dialog = new Dialog<>(); dialog.setTitle("Anexos · " + item.description());
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        VBox content = new VBox(8); content.setPadding(new Insets(8));
+        Button add = new Button("Adicionar arquivos"); add.getStyleClass().add("primary-button");
+        Runnable load = () -> {
+            var filter = new AttachmentFilter(null, item.profileId(), null, item.type(), null, null, true, null);
+            var files = context.attachmentService().search(filter).stream()
+                    .filter(a -> item.id().equals(a.transactionId())).toList();
+            content.getChildren().removeIf(node -> node != add);
+            if (files.isEmpty()) content.getChildren().add(new Label("Nenhum anexo nesta movimentação."));
+            files.forEach(file -> {
+                Label label = new Label(file.originalFilename() + " · " + file.documentType().displayName()
+                        + " · " + file.integrity().displayName());
+                Button open = action("Abrir", () -> context.attachmentService().openExternal(file.id()));
+                HBox row = new HBox(8, label, open); row.setAlignment(Pos.CENTER_LEFT); content.getChildren().add(row);
+            });
+        };
+        add.setOnAction(event -> {
+            FileChooser chooser = new FileChooser(); chooser.setTitle("Adicionar anexos");
+            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF e imagens", "*.pdf", "*.png", "*.jpg", "*.jpeg"));
+            var selected = chooser.showOpenMultipleDialog(dialog.getOwner());
+            if (selected != null) try {
+                DocumentType suggested = item.type() == TransactionType.INCOME ? DocumentType.PAYSLIP
+                        : item.status() == TransactionStatus.PENDING ? DocumentType.INVOICE : DocumentType.RECEIPT;
+                for (var file : selected) context.attachmentService().importForTransaction(item.id(), suggested, null, file.toPath());
+                load.run();
+            } catch (RuntimeException exception) { showError(exception.getMessage()); }
+        });
+        content.getChildren().add(add); load.run(); dialog.getDialogPane().setContent(content);
+        dialog.getDialogPane().setPrefWidth(560); dialog.showAndWait();
     }
     private void loadCategoryFilter() { if(context==null)return; TransactionType type=fixedType==null?typeFilter.getValue():fixedType; Category current=categoryFilter.getValue(); categoryFilter.getItems().setAll(context.categoryService().search(type==null?null:type.categoryType(),null,false)); if(current!=null&&categoryFilter.getItems().contains(current))categoryFilter.setValue(current); }
     private YearMonth parseMonth() { if(monthField.getText()==null||monthField.getText().isBlank())return null; try{return YearMonth.parse(monthField.getText().trim(),DateTimeFormatter.ofPattern("MM/yyyy"));}catch(DateTimeParseException e){throw new ValidationException("Informe o mês no formato MM/AAAA.");} }

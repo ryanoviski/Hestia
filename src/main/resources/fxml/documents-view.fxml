@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?><?import javafx.scene.layout.*?>
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.github.ryanoviski.hestia.presentation.controllers.DocumentsController" spacing="14" styleClass="view">
+ <HBox alignment="CENTER_LEFT"><VBox spacing="4" HBox.hgrow="ALWAYS"><Label text="Documentos" styleClass="view-heading"/><Label text="Holerites, comprovantes e documentos guardados localmente." styleClass="view-subtitle"/></VBox><Button text="Adicionar ao perfil" onAction="#addProfileDocument" styleClass="primary-button"/></HBox>
+ <FlowPane hgap="8" vgap="8" styleClass="filter-bar"><TextField fx:id="nameFilter" promptText="Pesquisar nome"/><ComboBox fx:id="profileFilter" promptText="Todos os perfis"/><ComboBox fx:id="typeFilter" promptText="Todos os tipos"/><ComboBox fx:id="transactionTypeFilter" promptText="Receita ou despesa"/><ComboBox fx:id="originFilter" promptText="Todas as origens"/><ComboBox fx:id="integrityFilter" promptText="Toda integridade"/><DatePicker fx:id="fromFilter" promptText="De"/><DatePicker fx:id="toFilter" promptText="Até"/><Button text="Filtrar" onAction="#refresh" styleClass="primary-button"/><Button text="Diagnóstico" onAction="#diagnose" styleClass="secondary-button"/></FlowPane>
+ <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="profiles-scroll"><VBox fx:id="documentsList" spacing="8"><Label fx:id="emptyState" text="Nenhum documento encontrado." styleClass="empty-state"/></VBox></ScrollPane>
+</VBox>

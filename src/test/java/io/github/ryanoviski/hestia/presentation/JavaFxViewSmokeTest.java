@@ -29,7 +29,8 @@ class JavaFxViewSmokeTest {
     @ParameterizedTest
     @ValueSource(strings = {"main-view.fxml", "dashboard-view.fxml", "profiles-view.fxml",
             "categories-view.fxml", "transactions-view.fxml", "placeholder-view.fxml",
-            "recurring-expenses-view.fxml", "installment-plans-view.fxml", "calendar-view.fxml"})
+            "recurring-expenses-view.fxml", "installment-plans-view.fxml", "calendar-view.fxml",
+            "documents-view.fxml", "settings-view.fxml"})
     void loadsViewWithItsController(String resource) throws Exception {
         CompletableFuture<Parent> loaded = new CompletableFuture<>();
         Platform.runLater(() -> {

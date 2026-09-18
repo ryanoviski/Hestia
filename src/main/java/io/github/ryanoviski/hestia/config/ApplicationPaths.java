@@ -39,6 +39,8 @@ public final class ApplicationPaths {
         Files.createDirectories(dataDirectory());
         Files.createDirectories(attachmentsDirectory());
         Files.createDirectories(backupsDirectory());
+        Files.createDirectories(cacheDirectory());
+        Files.createDirectories(temporaryDirectory());
         Files.createDirectories(logsDirectory());
     }
 
@@ -47,5 +49,7 @@ public final class ApplicationPaths {
     public Path databaseFile() { return dataDirectory().resolve("hestia.db"); }
     public Path attachmentsDirectory() { return root.resolve("attachments"); }
     public Path backupsDirectory() { return root.resolve("backups"); }
+    public Path cacheDirectory() { return root.resolve("cache"); }
+    public Path temporaryDirectory() { return root.resolve("temp"); }
     public Path logsDirectory() { return root.resolve("logs"); }
 }

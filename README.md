@@ -22,6 +22,9 @@ A etapa atual oferece:
 - compras parceladas independentes, com parcelas geradas imediatamente;
 - identificação da origem manual, recorrente ou parcelada em cada movimentação;
 - calendário financeiro mensal com filtros e resumo;
+- anexos PDF, PNG e JPEG em receitas, despesas e perfis;
+- visualização interna de imagens e PDFs, exportação e verificação de integridade;
+- backup completo, restauração protegida e backup automático opcional;
 - banco SQLite criado automaticamente, com migrações e dados iniciais idempotentes;
 - categorias padrão de receita e despesa;
 - logs técnicos e tratamento amigável de falhas críticas;
@@ -110,10 +113,41 @@ Hestia/
 ├── data/hestia.db
 ├── attachments/
 ├── backups/
+├── cache/
+├── temp/
 └── logs/
 ```
 
 O diretório pode ser substituído pela propriedade de sistema `hestia.data.dir` ou pela variável de ambiente `HESTIA_DATA_DIR`. A propriedade tem precedência. Isso permite isolar ambientes de desenvolvimento e testes sem tocar nos dados reais.
+
+## Documentos e privacidade
+
+Movimentações aceitam vários comprovantes, holerites, cobranças ou outros documentos. Perfis também
+podem receber documentos gerais. Os formatos permitidos são PDF, PNG, JPG e JPEG, com limite padrão
+de 20 MB por arquivo, configurável por `hestia.attachment.max.bytes`. O Hestia verifica a assinatura
+real, o tamanho e o SHA-256; uma extensão permitida com conteúdo incompatível é recusada.
+
+Os arquivos ficam em `attachments/household-{id}/AAAA/MM`, usando nomes físicos aleatórios. O nome
+original existe apenas nos metadados e na interface. Em **Documentos** é possível pesquisar, filtrar,
+visualizar, abrir externamente, exportar uma cópia, verificar integridade e remover. A remoção não apaga
+a movimentação nem o perfil. Miniaturas e renderizações temporárias pertencem ao `cache/` e podem ser
+recriadas. Nenhum documento é enviado para serviços externos.
+
+## Backup e restauração
+
+Em **Configurações**, o backup manual gera um arquivo `.hestia-backup` com snapshot íntegro do SQLite,
+anexos, manifesto versionado, tamanhos e hashes. Logs, cache, temporários e backups anteriores ficam de
+fora. O arquivo pode ser desprotegido ou usar senha com criptografia autenticada AES-256; a senha nunca
+é armazenada.
+
+Antes da restauração, formato, caminhos, manifesto, hashes, banco e versão de esquema são validados em
+uma área temporária. O Hestia cria um backup de segurança do estado atual antes de substituir banco e
+anexos. Backups com esquema futuro, senha incorreta, ZIP Slip, arquivos ausentes ou conteúdo alterado
+são rejeitados sem modificar os dados locais.
+
+O backup automático é opcional, nunca é ativado sem consentimento e executa no máximo uma vez ao dia.
+Ele não usa senha nesta versão e mantém dez arquivos por padrão, removendo somente backups automáticos
+reconhecidos pelo próprio Hestia.
 
 Exemplo no PowerShell:
 
@@ -142,10 +176,10 @@ Consulte [docs/architecture.md](docs/architecture.md) para as decisões e conven
 
 ## Limitações atuais e próxima etapa
 
-Ainda não há anexos, orçamentos, relatórios completos, backup e restauração, autenticação,
-sincronização, importação ou notificações do sistema. As recorrências desta versão são exclusivamente
+Ainda não há OCR, importação automática de documentos, orçamentos, relatórios completos, autenticação,
+sincronização, compartilhamento ou notificações do sistema. As recorrências desta versão são exclusivamente
 mensais e de despesas; parcelamentos também são somente de despesas. A próxima etapa recomendada é
-implementar anexos de comprovantes e holerites com armazenamento local seguro e backup coordenado.
+implementar orçamentos mensais por categoria e metas de gastos.
 
 ## Licença
 

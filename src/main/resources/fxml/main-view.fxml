@@ -27,6 +27,7 @@
             <Button text="Recorrências" userData="recurring" onAction="#navigate" styleClass="nav-button" />
             <Button text="Parcelamentos" userData="installments" onAction="#navigate" styleClass="nav-button" />
             <Button text="Calendário" userData="calendar" onAction="#navigate" styleClass="nav-button" />
+            <Button text="Documentos" userData="documents" onAction="#navigate" styleClass="nav-button" />
             <Button text="Orçamentos" userData="budgets" onAction="#navigate" styleClass="nav-button" />
             <Button text="Relatórios" userData="reports" onAction="#navigate" styleClass="nav-button" />
             <Label text="GESTÃO" styleClass="nav-section" />
