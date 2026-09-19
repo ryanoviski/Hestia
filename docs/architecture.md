@@ -52,7 +52,7 @@ Filtros são representados por `TransactionFilter` e transformados em condiçõe
 `recurring_expenses` guarda a regra mensal e `recurring_expense_occurrences` vincula cada competência
 a exatamente uma linha de `transactions`. A restrição única `(recurring_expense_id, reference_month)`
 protege contra inicializações, cliques ou navegações concorrentes. A aplicação gera do mês corrente até
-12 meses adiante e, ao abrir meses posteriores, estende o horizonte sob demanda. Uma ocorrência editada
+12 meses adiante e estende esse horizonte nas inicializações futuras. Uma ocorrência editada
 é marcada como `customized`; atualizações da regra alcançam somente ocorrências futuras, pendentes e não
 personalizadas. Regras são desativadas, nunca removidas.
 
@@ -68,8 +68,6 @@ com os vínculos para apresentar `Manual`, `Recorrente` ou `Parcela N de M`.
 
 Vencimentos mensais são sempre calculados a partir do dia do primeiro vencimento e do `YearMonth` de
 destino. Se o dia não existir, usa-se o último dia daquele mês; o ajuste de fevereiro não se propaga.
-O calendário consulta apenas o mês necessário, usando `due_date` e, quando ausente, `reference_date`,
-e reutiliza o resumo financeiro do painel.
 
 ## Anexos e integridade
 
@@ -85,9 +83,8 @@ move para o destino. Se a persistência falhar, o arquivo é compensado. A remo�
 para quarentena antes de excluir os metadados. O diagnóstico compara registros, arquivos, hashes e
 temporários sem remover órfãos automaticamente.
 
-Imagens são reduzidas antes de chegar ao `ImageView`. PDFs são abertos e renderizados com PDFBox em
-tarefa de segundo plano; cada mudança de página invalida resultados antigos. A interface permite zoom,
-navegação, abertura externa e exportação sem revelar a chave física.
+Os anexos são acessados no contexto da movimentação ou do perfil relacionado. A interface nunca revela
+a chave física e solicita confirmação antes de remover um arquivo, preservando o registro financeiro.
 
 ## Backup e restauração
 

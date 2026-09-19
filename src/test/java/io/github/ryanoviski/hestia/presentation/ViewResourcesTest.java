@@ -1,13 +1,27 @@
 package io.github.ryanoviski.hestia.presentation;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ViewResourcesTest {
+    @Test
+    void navigationContainsOnlyCurrentModules() throws Exception {
+        try (var stream = ViewResourcesTest.class.getResourceAsStream("/fxml/main-view.fxml")) {
+            assertThat(stream).isNotNull();
+            String fxml = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            assertThat(fxml)
+                    .doesNotContain("userData=\"calendar\"")
+                    .doesNotContain("userData=\"documents\"")
+                    .doesNotContain("userData=\"budgets\"");
+        }
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {
             "/fxml/main-view.fxml", "/fxml/dashboard-view.fxml",

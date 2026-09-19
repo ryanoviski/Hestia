@@ -3,11 +3,11 @@
 Sistema desktop de gestão financeira pessoal e familiar para organizar receitas, despesas e compromissos mensais em um ambiente simples, acolhedor e privado.
 
 > O Hestia está em desenvolvimento. Esta versão oferece movimentações, compromissos mensais,
-> compras parceladas e calendário, mas ainda não deve ser usada como registro financeiro definitivo.
+> compras parceladas e anexos locais, mas ainda não deve ser usada como registro financeiro definitivo.
 
 ## Objetivo e escopo
 
-O projeto pretende reunir perfis individuais e compartilhados, receitas, despesas, contas recorrentes, compras parceladas, categorias, orçamentos, anexos, calendário financeiro, relatórios e rotinas de backup e restauração.
+O projeto pretende reunir perfis individuais e compartilhados, receitas, despesas, contas recorrentes, compras parceladas, categorias, anexos, relatórios e rotinas de backup e restauração.
 
 A etapa atual oferece:
 
@@ -21,9 +21,8 @@ A etapa atual oferece:
 - despesas recorrentes mensais, com ocorrências automáticas e idempotentes;
 - compras parceladas independentes, com parcelas geradas imediatamente;
 - identificação da origem manual, recorrente ou parcelada em cada movimentação;
-- calendário financeiro mensal com filtros e resumo;
 - anexos PDF, PNG e JPEG em receitas, despesas e perfis;
-- visualização interna de imagens e PDFs, exportação e verificação de integridade;
+- consulta e abertura dos anexos diretamente nas movimentações e nos perfis;
 - backup completo, restauração protegida e backup automático opcional;
 - banco SQLite criado automaticamente, com migrações e dados iniciais idempotentes;
 - categorias padrão de receita e despesa;
@@ -71,8 +70,8 @@ Movimentações e contas a pagar também podem ser filtradas por origem: manual,
 
 Em **Recorrências**, uma regra mensal define descrição, valor previsto, responsável, categoria e
 primeiro vencimento. A aplicação garante ocorrências do mês atual até 12 meses à frente e amplia o
-horizonte quando um mês futuro é aberto no calendário. A geração pode ser repetida com segurança:
-há uma única ocorrência por regra e competência. Dias 29, 30 ou 31 são ajustados ao último dia do
+horizonte automaticamente nas inicializações futuras. A geração pode ser repetida com segurança: há
+uma única ocorrência por regra e competência. Dias 29, 30 ou 31 são ajustados ao último dia do
 mês sem perder o dia original nos meses seguintes.
 
 Editar uma movimentação recorrente altera somente aquela ocorrência e a marca como personalizada.
@@ -85,7 +84,7 @@ reais e independentes de cartões ou contas. Centavos indivisíveis são distrib
 nas primeiras parcelas: R$ 100,00 em três resulta em R$ 33,34, R$ 33,33 e R$ 33,33. A ação
 **Cancelar parcelas restantes** preserva parcelas pagas e todo o histórico.
 
-Recorrências e planos não são somados diretamente. Painel, calendário e contas a pagar usam somente
+Recorrências e planos não são somados diretamente. Painel e contas a pagar usam somente
 as movimentações geradas, evitando dupla contagem.
 
 No painel:
@@ -120,7 +119,7 @@ Hestia/
 
 O diretório pode ser substituído pela propriedade de sistema `hestia.data.dir` ou pela variável de ambiente `HESTIA_DATA_DIR`. A propriedade tem precedência. Isso permite isolar ambientes de desenvolvimento e testes sem tocar nos dados reais.
 
-## Documentos e privacidade
+## Anexos e privacidade
 
 Movimentações aceitam vários comprovantes, holerites, cobranças ou outros documentos. Perfis também
 podem receber documentos gerais. Os formatos permitidos são PDF, PNG, JPG e JPEG, com limite padrão
@@ -128,10 +127,9 @@ de 20 MB por arquivo, configurável por `hestia.attachment.max.bytes`. O Hestia 
 real, o tamanho e o SHA-256; uma extensão permitida com conteúdo incompatível é recusada.
 
 Os arquivos ficam em `attachments/household-{id}/AAAA/MM`, usando nomes físicos aleatórios. O nome
-original existe apenas nos metadados e na interface. Em **Documentos** é possível pesquisar, filtrar,
-visualizar, abrir externamente, exportar uma cópia, verificar integridade e remover. A remoção não apaga
-a movimentação nem o perfil. Miniaturas e renderizações temporárias pertencem ao `cache/` e podem ser
-recriadas. Nenhum documento é enviado para serviços externos.
+original existe apenas nos metadados e na interface. Os anexos são administrados diretamente na
+movimentação ou no perfil relacionado, onde podem ser adicionados, consultados, abertos e removidos.
+A remoção não apaga a movimentação nem o perfil. Nenhum arquivo é enviado para serviços externos.
 
 ## Backup e restauração
 
@@ -176,10 +174,10 @@ Consulte [docs/architecture.md](docs/architecture.md) para as decisões e conven
 
 ## Limitações atuais e próxima etapa
 
-Ainda não há OCR, importação automática de documentos, orçamentos, relatórios completos, autenticação,
+Ainda não há OCR, importação automática de documentos, relatórios completos, autenticação,
 sincronização, compartilhamento ou notificações do sistema. As recorrências desta versão são exclusivamente
 mensais e de despesas; parcelamentos também são somente de despesas. A próxima etapa recomendada é
-implementar orçamentos mensais por categoria e metas de gastos.
+consolidar relatórios mensais e melhorar a visão de próximos compromissos no painel.
 
 ## Licença
 

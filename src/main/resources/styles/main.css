@@ -72,10 +72,6 @@
 .status-overdue { -fx-background-color: #f5dfda; -fx-text-fill: #963e30; }
 .origin-pill { -fx-background-color: #e8eeef; -fx-text-fill: #466066; -fx-padding: 2 7; -fx-background-radius: 8; -fx-font-size: 10px; -fx-max-width: 150; }
 .origin-notice { -fx-background-color: #e9f3f1; -fx-text-fill: #285f59; -fx-padding: 10; -fx-background-radius: 7; }
-.calendar-day { -fx-background-color: white; -fx-border-color: -hestia-border; -fx-padding: 7; -fx-min-height: 92; }
-.calendar-today { -fx-border-color: -hestia-primary; -fx-border-width: 2; }
-.calendar-outside { -fx-opacity: 0.45; }
-.calendar-item { -fx-font-size: 10px; -fx-text-fill: #38534f; }
 .table-action { -fx-background-color: transparent; -fx-text-fill: -hestia-primary; -fx-padding: 5 7; -fx-cursor: hand; }
 .table-action:hover { -fx-background-color: -hestia-primary-soft; }
 .metric-value { -fx-font-size: 19px; -fx-font-weight: bold; }
