@@ -82,18 +82,89 @@ public final class SqliteProfileRepository implements ProfileRepository {
     }
 
     @Override
-    public void deactivate(long profileId, long householdId) {
+    public Profile update(Profile profile) {
         try (var connection = connectionFactory.openConnection();
              var statement = connection.prepareStatement("""
-                     UPDATE profiles SET active = 0, updated_at = ?
-                     WHERE id = ? AND household_id = ? AND active = 1
+                     UPDATE profiles SET name = ?, profile_type = ?, color = ?, updated_at = ?
+                     WHERE id = ? AND household_id = ?
                      """)) {
-            statement.setString(1, Instant.now().toString());
-            statement.setLong(2, profileId);
-            statement.setLong(3, householdId);
-            statement.executeUpdate();
+            statement.setString(1, profile.name());
+            statement.setString(2, profile.type().name());
+            statement.setString(3, profile.color());
+            statement.setString(4, profile.updatedAt().toString());
+            statement.setLong(5, profile.id());
+            statement.setLong(6, profile.householdId());
+            if (statement.executeUpdate() != 1) throw new SQLException("Profile was not updated");
+            return profile;
         } catch (SQLException exception) {
-            throw new DatabaseException("Could not deactivate profile", exception);
+            throw new DatabaseException("Could not update profile", exception);
+        }
+    }
+
+    @Override
+    public void setActive(long profileId, long householdId, boolean active) {
+        try (var connection = connectionFactory.openConnection();
+             var statement = connection.prepareStatement("""
+                     UPDATE profiles SET active = ?, updated_at = ?
+                     WHERE id = ? AND household_id = ?
+                     """)) {
+            statement.setBoolean(1, active);
+            statement.setString(2, Instant.now().toString());
+            statement.setLong(3, profileId);
+            statement.setLong(4, householdId);
+            if (statement.executeUpdate() != 1) throw new SQLException("Profile status was not updated");
+        } catch (SQLException exception) {
+            throw new DatabaseException("Could not change profile status", exception);
+        }
+    }
+
+    @Override
+    public boolean existsByNormalizedName(long householdId, String name, Long excludingId) {
+        String sql = """
+                SELECT 1 FROM profiles
+                WHERE household_id = ? AND lower(trim(name)) = lower(trim(?))
+                  AND (? IS NULL OR id != ?) LIMIT 1
+                """;
+        try (var connection = connectionFactory.openConnection();
+             var statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, householdId);
+            statement.setString(2, name);
+            if (excludingId == null) statement.setNull(3, java.sql.Types.INTEGER); else statement.setLong(3, excludingId);
+            if (excludingId == null) statement.setNull(4, java.sql.Types.INTEGER); else statement.setLong(4, excludingId);
+            try (var result = statement.executeQuery()) { return result.next(); }
+        } catch (SQLException exception) {
+            throw new DatabaseException("Could not check profile name", exception);
+        }
+    }
+
+    @Override
+    public boolean isReferenced(long profileId) {
+        String sql = """
+                SELECT 1 FROM transactions WHERE profile_id = ?
+                UNION ALL SELECT 1 FROM recurring_expenses WHERE profile_id = ?
+                UNION ALL SELECT 1 FROM installment_plans WHERE profile_id = ?
+                UNION ALL SELECT 1 FROM attachments WHERE profile_id = ?
+                LIMIT 1
+                """;
+        try (var connection = connectionFactory.openConnection();
+             var statement = connection.prepareStatement(sql)) {
+            for (int index = 1; index <= 4; index++) statement.setLong(index, profileId);
+            try (var result = statement.executeQuery()) { return result.next(); }
+        } catch (SQLException exception) {
+            throw new DatabaseException("Could not check profile references", exception);
+        }
+    }
+
+    @Override
+    public void delete(long profileId, long householdId) {
+        try (var connection = connectionFactory.openConnection();
+             var statement = connection.prepareStatement(
+                     "DELETE FROM profiles WHERE id = ? AND household_id = ?")) {
+            statement.setLong(1, profileId);
+            statement.setLong(2, householdId);
+            if (statement.executeUpdate() != 1) throw new SQLException("Profile was not deleted");
+        } catch (SQLException exception) {
+            throw new DatabaseException("Could not delete profile", exception);
         }
     }
 

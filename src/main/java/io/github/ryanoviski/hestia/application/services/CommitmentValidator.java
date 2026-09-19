@@ -13,7 +13,7 @@ final class CommitmentValidator {
                 .orElseThrow(() -> new ValidationException("Selecione um perfil válido."));
         if (profile.householdId() != householdId || !profile.active())
             throw new ValidationException("O perfil selecionado está inativo ou não pertence ao grupo.");
-        var category = categories.findById(categoryId)
+        var category = categories.findById(categoryId, householdId)
                 .orElseThrow(() -> new ValidationException("Selecione uma categoria válida."));
         if ((category.householdId() != null && category.householdId() != householdId)
                 || !category.active() || category.type() != CategoryType.EXPENSE)

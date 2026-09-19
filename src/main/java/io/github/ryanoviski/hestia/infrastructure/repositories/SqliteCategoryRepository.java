@@ -21,13 +21,22 @@ public final class SqliteCategoryRepository implements CategoryRepository {
 
     @Override
     public List<Category> search(long householdId, CategoryType type, String name, boolean includeInactive) {
-        StringBuilder sql = new StringBuilder("SELECT * FROM categories WHERE (household_id IS NULL OR household_id = ?)");
-        if (type != null) sql.append(" AND category_type = ?");
-        if (name != null && !name.isBlank()) sql.append(" AND lower(name) LIKE lower(?)");
-        if (!includeInactive) sql.append(" AND active = 1");
-        sql.append(" ORDER BY category_type, active DESC, name COLLATE NOCASE");
+        StringBuilder sql = new StringBuilder("""
+                SELECT c.id, c.household_id, COALESCE(p.name, c.name) AS name,
+                       c.category_type, COALESCE(p.color, c.color) AS color, c.icon,
+                       COALESCE(p.active, c.active) AS active, c.created_at,
+                       COALESCE(p.updated_at, c.updated_at) AS updated_at
+                FROM categories c
+                LEFT JOIN category_preferences p ON p.category_id = c.id AND p.household_id = ?
+                WHERE (c.household_id IS NULL OR c.household_id = ?)
+                """);
+        if (type != null) sql.append(" AND c.category_type = ?");
+        if (name != null && !name.isBlank()) sql.append(" AND lower(COALESCE(p.name, c.name)) LIKE lower(?)");
+        if (!includeInactive) sql.append(" AND COALESCE(p.active, c.active) = 1");
+        sql.append(" ORDER BY c.category_type, COALESCE(p.active, c.active) DESC, COALESCE(p.name, c.name) COLLATE NOCASE");
         try (var connection = connections.openConnection(); var statement = connection.prepareStatement(sql.toString())) {
             int index = 1;
+            statement.setLong(index++, householdId);
             statement.setLong(index++, householdId);
             if (type != null) statement.setString(index++, type.name());
             if (name != null && !name.isBlank()) statement.setString(index, "%" + name.trim() + "%");
@@ -40,10 +49,20 @@ public final class SqliteCategoryRepository implements CategoryRepository {
     }
 
     @Override
-    public Optional<Category> findById(long id) {
+    public Optional<Category> findById(long id, long householdId) {
         try (var connection = connections.openConnection();
-             var statement = connection.prepareStatement("SELECT * FROM categories WHERE id = ?")) {
-            statement.setLong(1, id);
+             var statement = connection.prepareStatement("""
+                     SELECT c.id, c.household_id, COALESCE(p.name, c.name) AS name,
+                            c.category_type, COALESCE(p.color, c.color) AS color, c.icon,
+                            COALESCE(p.active, c.active) AS active, c.created_at,
+                            COALESCE(p.updated_at, c.updated_at) AS updated_at
+                     FROM categories c
+                     LEFT JOIN category_preferences p ON p.category_id = c.id AND p.household_id = ?
+                     WHERE c.id = ? AND (c.household_id IS NULL OR c.household_id = ?)
+                     """)) {
+            statement.setLong(1, householdId);
+            statement.setLong(2, id);
+            statement.setLong(3, householdId);
             try (var result = statement.executeQuery()) {
                 return result.next() ? Optional.of(map(result)) : Optional.empty();
             }
@@ -53,16 +72,19 @@ public final class SqliteCategoryRepository implements CategoryRepository {
     @Override
     public boolean existsByNormalizedName(long householdId, CategoryType type, String name, Long excludingId) {
         String sql = """
-                SELECT 1 FROM categories
-                WHERE (household_id IS NULL OR household_id = ?) AND category_type = ?
-                  AND lower(trim(name)) = lower(trim(?)) AND (? IS NULL OR id != ?) LIMIT 1
+                SELECT 1 FROM categories c
+                LEFT JOIN category_preferences p ON p.category_id = c.id AND p.household_id = ?
+                WHERE (c.household_id IS NULL OR c.household_id = ?) AND c.category_type = ?
+                  AND lower(trim(COALESCE(p.name, c.name))) = lower(trim(?))
+                  AND (? IS NULL OR c.id != ?) LIMIT 1
                 """;
         try (var connection = connections.openConnection(); var statement = connection.prepareStatement(sql)) {
             statement.setLong(1, householdId);
-            statement.setString(2, type.name());
-            statement.setString(3, name);
-            if (excludingId == null) statement.setNull(4, java.sql.Types.INTEGER); else statement.setLong(4, excludingId);
+            statement.setLong(2, householdId);
+            statement.setString(3, type.name());
+            statement.setString(4, name);
             if (excludingId == null) statement.setNull(5, java.sql.Types.INTEGER); else statement.setLong(5, excludingId);
+            if (excludingId == null) statement.setNull(6, java.sql.Types.INTEGER); else statement.setLong(6, excludingId);
             try (var result = statement.executeQuery()) { return result.next(); }
         } catch (SQLException exception) { throw failure("check category name", exception); }
     }
@@ -103,6 +125,25 @@ public final class SqliteCategoryRepository implements CategoryRepository {
     }
 
     @Override
+    public Category updateStandardPreference(long householdId, Category category) {
+        try (var connection = connections.openConnection(); var statement = connection.prepareStatement("""
+                INSERT INTO category_preferences(household_id, category_id, name, color, active, updated_at)
+                VALUES(?,?,?,?,?,?)
+                ON CONFLICT(household_id, category_id) DO UPDATE SET
+                    name=excluded.name, color=excluded.color, active=excluded.active, updated_at=excluded.updated_at
+                """)) {
+            statement.setLong(1, householdId);
+            statement.setLong(2, category.id());
+            statement.setString(3, category.name());
+            statement.setString(4, category.color());
+            statement.setBoolean(5, category.active());
+            statement.setString(6, category.updatedAt().toString());
+            statement.executeUpdate();
+            return category;
+        } catch (SQLException exception) { throw failure("update standard category preference", exception); }
+    }
+
+    @Override
     public void setActive(long categoryId, long householdId, boolean active) {
         try (var connection = connections.openConnection(); var statement = connection.prepareStatement(
                 "UPDATE categories SET active=?, updated_at=? WHERE id=? AND household_id=?")) {
@@ -115,12 +156,46 @@ public final class SqliteCategoryRepository implements CategoryRepository {
     }
 
     @Override
+    public void setStandardActive(long categoryId, long householdId, boolean active) {
+        try (var connection = connections.openConnection(); var statement = connection.prepareStatement("""
+                INSERT INTO category_preferences(household_id, category_id, active, updated_at)
+                VALUES(?,?,?,?)
+                ON CONFLICT(household_id, category_id) DO UPDATE SET
+                    active=excluded.active, updated_at=excluded.updated_at
+                """)) {
+            statement.setLong(1, householdId);
+            statement.setLong(2, categoryId);
+            statement.setBoolean(3, active);
+            statement.setString(4, Instant.now().toString());
+            statement.executeUpdate();
+        } catch (SQLException exception) { throw failure("change standard category visibility", exception); }
+    }
+
+    @Override
     public boolean isReferenced(long categoryId) {
         try (var connection = connections.openConnection();
-             var statement = connection.prepareStatement("SELECT 1 FROM transactions WHERE category_id=? LIMIT 1")) {
+             var statement = connection.prepareStatement("""
+                     SELECT 1 FROM transactions WHERE category_id = ?
+                     UNION ALL SELECT 1 FROM recurring_expenses WHERE category_id = ?
+                     UNION ALL SELECT 1 FROM installment_plans WHERE category_id = ?
+                     LIMIT 1
+                     """)) {
             statement.setLong(1, categoryId);
+            statement.setLong(2, categoryId);
+            statement.setLong(3, categoryId);
             try (var result = statement.executeQuery()) { return result.next(); }
         } catch (SQLException exception) { throw failure("check category references", exception); }
+    }
+
+    @Override
+    public void delete(long categoryId, long householdId) {
+        try (var connection = connections.openConnection();
+             var statement = connection.prepareStatement(
+                     "DELETE FROM categories WHERE id=? AND household_id=?")) {
+            statement.setLong(1, categoryId);
+            statement.setLong(2, householdId);
+            if (statement.executeUpdate() != 1) throw new SQLException("Category was not deleted");
+        } catch (SQLException exception) { throw failure("delete category", exception); }
     }
 
     private void bind(java.sql.PreparedStatement statement, Category category) throws SQLException {

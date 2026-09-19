@@ -42,9 +42,11 @@ public final class SqliteFinancialCommitmentRepository implements FinancialCommi
     }
     @Override public List<RecurringExpense> findRecurring(long householdId,String search,Long profileId,Long categoryId){
         StringBuilder sql=new StringBuilder("""
-            SELECT r.*,p.name profile_name,c.name category_name,
+            SELECT r.*,p.name profile_name,COALESCE(cp.name,c.name) category_name,
             (SELECT MIN(t.due_date) FROM recurring_expense_occurrences o JOIN transactions t ON t.id=o.transaction_id WHERE o.recurring_expense_id=r.id AND t.status='PENDING') next_due
-            FROM recurring_expenses r JOIN profiles p ON p.id=r.profile_id JOIN categories c ON c.id=r.category_id WHERE r.household_id=?
+            FROM recurring_expenses r JOIN profiles p ON p.id=r.profile_id JOIN categories c ON c.id=r.category_id
+            LEFT JOIN category_preferences cp ON cp.category_id=c.id AND cp.household_id=r.household_id
+            WHERE r.household_id=?
             """);List<Object> values=new ArrayList<>();values.add(householdId);
         if(search!=null&&!search.isBlank()){sql.append(" AND lower(r.description) LIKE lower(?)");values.add("%"+search.trim()+"%");}
         if(profileId!=null){sql.append(" AND r.profile_id=?");values.add(profileId);}if(categoryId!=null){sql.append(" AND r.category_id=?");values.add(categoryId);}sql.append(" ORDER BY r.active DESC,r.description");
@@ -67,7 +69,7 @@ public final class SqliteFinancialCommitmentRepository implements FinancialCommi
         for(GeneratedExpense item:items){long tx=insertTransaction(c,plan.householdId(),plan.profileId(),plan.categoryId(),item,plan.createdAt());try(var s=c.prepareStatement("INSERT INTO installments(installment_plan_id,transaction_id,installment_number,planned_amount_cents,created_at) VALUES(?,?,?,?,?)")){s.setLong(1,id);s.setLong(2,tx);s.setInt(3,item.sequence());s.setLong(4,item.amountCents());s.setString(5,plan.createdAt().toString());s.executeUpdate();}}
         return new InstallmentPlan(id,plan.householdId(),plan.profileId(),plan.categoryId(),plan.description(),plan.totalAmountCents(),plan.installmentCount(),plan.firstDueDate(),true,plan.notes(),plan.createdAt(),plan.updatedAt(),null,null,0,plan.installmentCount(),0,0,plan.totalAmountCents(),plan.firstDueDate());});}
     @Override public List<InstallmentPlan> findInstallmentPlans(long householdId){String sql="""
-        SELECT ip.*,p.name profile_name,c.name category_name,
+        SELECT ip.*,p.name profile_name,COALESCE(cp.name,c.name) category_name,
         COALESCE(SUM(CASE WHEN t.status='SETTLED' THEN 1 ELSE 0 END),0) paid_count,
         COALESCE(SUM(CASE WHEN t.status='PENDING' THEN 1 ELSE 0 END),0) pending_count,
         COALESCE(SUM(CASE WHEN t.status='CANCELLED' THEN 1 ELSE 0 END),0) cancelled_count,
@@ -75,6 +77,7 @@ public final class SqliteFinancialCommitmentRepository implements FinancialCommi
         COALESCE(SUM(CASE WHEN t.status='PENDING' THEN t.amount_cents ELSE 0 END),0) remaining_amount,
         MIN(CASE WHEN t.status='PENDING' THEN t.due_date END) next_due
         FROM installment_plans ip JOIN profiles p ON p.id=ip.profile_id JOIN categories c ON c.id=ip.category_id
+        LEFT JOIN category_preferences cp ON cp.category_id=c.id AND cp.household_id=ip.household_id
         JOIN installments i ON i.installment_plan_id=ip.id JOIN transactions t ON t.id=i.transaction_id
         WHERE ip.household_id=? GROUP BY ip.id ORDER BY ip.created_at DESC
         """;try(var c=connections.openConnection();var s=c.prepareStatement(sql)){s.setLong(1,householdId);try(var rs=s.executeQuery()){List<InstallmentPlan> out=new ArrayList<>();while(rs.next())out.add(mapPlan(rs));return out;}}catch(SQLException e){throw failure("find installment plans",e);}}

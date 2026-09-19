@@ -12,7 +12,15 @@ public interface ProfileRepository {
 
     Profile save(Profile profile);
 
-    void deactivate(long profileId, long householdId);
+    Profile update(Profile profile);
+
+    void setActive(long profileId, long householdId, boolean active);
+
+    boolean existsByNormalizedName(long householdId, String name, Long excludingId);
+
+    boolean isReferenced(long profileId);
+
+    void delete(long profileId, long householdId);
 
     long findDefaultHouseholdId();
 

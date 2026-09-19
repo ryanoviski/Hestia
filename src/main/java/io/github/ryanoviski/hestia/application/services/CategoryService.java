@@ -35,25 +35,44 @@ public final class CategoryService {
         long householdId = profiles.findDefaultHouseholdId();
         Category existing = ownedCategory(id, householdId);
         String normalized = validate(name, type, color);
+        if (existing.standard() && existing.type() != type) {
+            throw new ValidationException("O tipo de uma categoria padrão não pode ser alterado.");
+        }
         if (existing.type() != type && repository.isReferenced(id)) {
             throw new ValidationException("O tipo de uma categoria em uso não pode ser alterado.");
         }
         ensureUnique(householdId, type, normalized, id);
-        return repository.update(new Category(id, householdId, normalized, type, normalizeColor(color),
-                existing.icon(), existing.active(), existing.createdAt(), Instant.now()));
+        Category updated = new Category(id, existing.householdId(), normalized, type, normalizeColor(color),
+                existing.icon(), existing.active(), existing.createdAt(), Instant.now());
+        return existing.standard() ? repository.updateStandardPreference(householdId, updated)
+                : repository.update(updated);
     }
 
     public void setActive(long id, boolean active) {
         long householdId = profiles.findDefaultHouseholdId();
-        ownedCategory(id, householdId);
-        repository.setActive(id, householdId, active);
+        Category category = ownedCategory(id, householdId);
+        if (category.standard()) repository.setStandardActive(id, householdId, active);
+        else repository.setActive(id, householdId, active);
+    }
+
+    public void delete(long id) {
+        long householdId = profiles.findDefaultHouseholdId();
+        Category category = ownedCategory(id, householdId);
+        if (category.standard()) {
+            repository.setStandardActive(id, householdId, false);
+            return;
+        }
+        if (repository.isReferenced(id)) {
+            throw new ValidationException("Esta categoria já foi utilizada. Desative-a para preservar o histórico.");
+        }
+        repository.delete(id, householdId);
     }
 
     private Category ownedCategory(long id, long householdId) {
-        Category category = repository.findById(id)
+        Category category = repository.findById(id, householdId)
                 .orElseThrow(() -> new ValidationException("Categoria não encontrada."));
-        if (category.standard()) throw new ValidationException("Categorias padrão não podem ser alteradas.");
-        if (!category.householdId().equals(householdId)) throw new ValidationException("Categoria inválida para este grupo.");
+        if (!category.standard() && !category.householdId().equals(householdId))
+            throw new ValidationException("Categoria inválida para este grupo.");
         return category;
     }
 
@@ -70,7 +89,7 @@ public final class CategoryService {
         if (color == null || color.isBlank()) return null;
         String normalized = color.trim();
         if (!normalized.matches("#[0-9a-fA-F]{6}"))
-            throw new ValidationException("Informe uma cor hexadecimal válida, como #3D8B7D.");
+            throw new ValidationException("Selecione uma cor válida para a categoria.");
         return normalized.toUpperCase();
     }
 

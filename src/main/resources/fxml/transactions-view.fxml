@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import io.github.ryanoviski.hestia.presentation.components.MonthYearPicker?>
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="io.github.ryanoviski.hestia.presentation.controllers.TransactionsController"
       spacing="15" styleClass="view">
     <HBox alignment="CENTER_LEFT"><VBox spacing="4" HBox.hgrow="ALWAYS"><Label fx:id="heading" text="Movimentações" styleClass="view-heading"/><Label text="Consulte receitas e despesas e acompanhe cada compromisso." styleClass="view-subtitle"/></VBox><Button text="Nova movimentação" onAction="#newTransaction" styleClass="primary-button"/></HBox>
     <FlowPane hgap="9" vgap="9" styleClass="filter-bar">
-        <TextField fx:id="searchField" promptText="Pesquisar descrição" prefWidth="190"/>
-        <TextField fx:id="monthField" promptText="MM/AAAA" prefWidth="100"/>
-        <ComboBox fx:id="typeFilter" promptText="Todos os tipos" prefWidth="130"/>
-        <ComboBox fx:id="statusFilter" promptText="Todas as situações" prefWidth="155"/>
-        <ComboBox fx:id="profileFilter" promptText="Todos os perfis" prefWidth="150"/>
-        <ComboBox fx:id="categoryFilter" promptText="Todas as categorias" prefWidth="165"/>
-        <ComboBox fx:id="originFilter" promptText="Todas as origens" prefWidth="145"/>
+        <TextField fx:id="searchField" promptText="Pesquisar descrição" minWidth="210" prefWidth="250"/>
+        <MonthYearPicker fx:id="monthPicker" minWidth="190" prefWidth="210"/>
+        <ComboBox fx:id="typeFilter" promptText="Todos os tipos" minWidth="165" prefWidth="185"/>
+        <ComboBox fx:id="statusFilter" promptText="Todas as situações" minWidth="185" prefWidth="205"/>
+        <ComboBox fx:id="profileFilter" promptText="Todos os perfis" minWidth="180" prefWidth="210"/>
+        <ComboBox fx:id="categoryFilter" promptText="Todas as categorias" minWidth="200" prefWidth="230"/>
+        <ComboBox fx:id="originFilter" promptText="Todas as origens" minWidth="175" prefWidth="195"/>
         <CheckBox fx:id="overdueOnly" text="Somente vencidas"/>
         <Button text="Filtrar" onAction="#applyFilters" styleClass="primary-button"/>
         <Button text="Limpar" onAction="#clearFilters" styleClass="secondary-button"/>

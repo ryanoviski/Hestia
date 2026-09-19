@@ -17,7 +17,6 @@ public final class MainController {
     private static final Logger LOGGER = LoggerFactory.getLogger(MainController.class);
 
     @FXML private StackPane contentArea;
-    @FXML private Label pageTitle;
     @FXML private VBox navigation;
 
     private ApplicationContext context;
@@ -36,9 +35,9 @@ public final class MainController {
             case "dashboard" -> showDashboard();
             case "profiles" -> showProfiles();
             case "categories" -> showCategories();
-            case "transactions" -> showTransactions("Movimentações", null, false);
-            case "income" -> showTransactions("Receitas", TransactionType.INCOME, false);
-            case "bills" -> showTransactions("Contas a pagar", TransactionType.EXPENSE, true);
+            case "transactions" -> showTransactions(null, false);
+            case "income" -> showTransactions(TransactionType.INCOME, false);
+            case "bills" -> showTransactions(TransactionType.EXPENSE, true);
             case "recurring" -> showRecurring();
             case "installments" -> showInstallments();
             case "settings" -> showSettings();
@@ -47,7 +46,6 @@ public final class MainController {
     }
 
     private void showDashboard() {
-        pageTitle.setText("Painel");
         loadContent("/fxml/dashboard-view.fxml", loader -> {
             DashboardController controller = loader.getController();
             controller.configure(context.dashboardService());
@@ -56,15 +54,13 @@ public final class MainController {
     }
 
     private void showCategories() {
-        pageTitle.setText("Categorias");
         loadContent("/fxml/categories-view.fxml", loader -> {
             CategoriesController controller = loader.getController();
             controller.configure(context.categoryService());
         });
     }
 
-    private void showTransactions(String title, TransactionType fixedType, boolean payableMode) {
-        pageTitle.setText(title);
+    private void showTransactions(TransactionType fixedType, boolean payableMode) {
         loadContent("/fxml/transactions-view.fxml", loader -> {
             TransactionsController controller = loader.getController();
             controller.configure(context, fixedType, payableMode);
@@ -72,19 +68,17 @@ public final class MainController {
     }
 
     private void showProfiles() {
-        pageTitle.setText("Perfis");
         loadContent("/fxml/profiles-view.fxml", loader -> {
             ProfilesController controller = loader.getController();
             controller.configure(context);
         });
     }
 
-    private void showRecurring() { pageTitle.setText("Recorrências"); loadContent("/fxml/recurring-expenses-view.fxml", loader -> ((RecurringExpensesController)loader.getController()).configure(context)); }
-    private void showInstallments() { pageTitle.setText("Parcelamentos"); loadContent("/fxml/installment-plans-view.fxml", loader -> ((InstallmentPlansController)loader.getController()).configure(context)); }
-    private void showSettings() { pageTitle.setText("Configurações"); loadContent("/fxml/settings-view.fxml", loader -> ((SettingsController)loader.getController()).configure(context)); }
+    private void showRecurring() { loadContent("/fxml/recurring-expenses-view.fxml", loader -> ((RecurringExpensesController)loader.getController()).configure(context)); }
+    private void showInstallments() { loadContent("/fxml/installment-plans-view.fxml", loader -> ((InstallmentPlansController)loader.getController()).configure(context)); }
+    private void showSettings() { loadContent("/fxml/settings-view.fxml", loader -> ((SettingsController)loader.getController()).configure(context)); }
 
     private void showPlaceholder(String title) {
-        pageTitle.setText(title);
         loadContent("/fxml/placeholder-view.fxml", loader -> {
             PlaceholderController controller = loader.getController();
             controller.setModuleName(title);

@@ -26,7 +26,7 @@ class DatabaseInitializerTest {
         assertThat(database).exists();
         try (var connection = factory.openConnection();
              var history = connection.createStatement().executeQuery("SELECT COUNT(*) FROM schema_history")) {
-            assertThat(history.getInt(1)).isEqualTo(4);
+            assertThat(history.getInt(1)).isEqualTo(5);
         }
         try (var connection = factory.openConnection();
              var households = connection.createStatement().executeQuery("SELECT COUNT(*) FROM households")) {

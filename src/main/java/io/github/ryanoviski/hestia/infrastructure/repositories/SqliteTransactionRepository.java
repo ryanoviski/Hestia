@@ -28,13 +28,14 @@ import java.util.Optional;
 
 public final class SqliteTransactionRepository implements TransactionRepository {
     private static final String SELECT = """
-            SELECT t.*, p.name profile_name, c.name category_name,
+            SELECT t.*, p.name profile_name, COALESCE(cp.name, c.name) category_name,
             CASE WHEN ro.id IS NOT NULL THEN 'RECURRING' WHEN i.id IS NOT NULL THEN 'INSTALLMENT' ELSE 'MANUAL' END origin_type,
             COALESCE(ro.recurring_expense_id, i.installment_plan_id) origin_id,
             CASE WHEN ro.id IS NOT NULL THEN 'Recorrência mensal'
                  WHEN i.id IS NOT NULL THEN 'Parcela ' || i.installment_number || ' de ' || ip.installment_count
                  ELSE NULL END origin_details
             FROM transactions t JOIN profiles p ON p.id=t.profile_id JOIN categories c ON c.id=t.category_id
+            LEFT JOIN category_preferences cp ON cp.category_id=c.id AND cp.household_id=t.household_id
             LEFT JOIN recurring_expense_occurrences ro ON ro.transaction_id=t.id
             LEFT JOIN installments i ON i.transaction_id=t.id
             LEFT JOIN installment_plans ip ON ip.id=i.installment_plan_id
@@ -161,9 +162,12 @@ public final class SqliteTransactionRepository implements TransactionRepository 
                 try (var r=statement.executeQuery()) { received=r.getLong("received"); expected=r.getLong("expected"); paid=r.getLong("paid"); pending=r.getLong("pending"); overdue=r.getLong("overdue"); projectedIncome=r.getLong("projected_income"); projectedExpense=r.getLong("projected_expense"); }
             }
             try (var statement = connection.prepareStatement("""
-                    SELECT c.name, SUM(t.amount_cents) total FROM transactions t JOIN categories c ON c.id=t.category_id
+                    SELECT COALESCE(cp.name,c.name) category_name, SUM(t.amount_cents) total
+                    FROM transactions t JOIN categories c ON c.id=t.category_id
+                    LEFT JOIN category_preferences cp ON cp.category_id=c.id AND cp.household_id=t.household_id
                     WHERE t.household_id=? AND t.transaction_type='EXPENSE' AND t.status!='CANCELLED'
-                    AND t.reference_date>=? AND t.reference_date<? GROUP BY c.id,c.name ORDER BY total DESC
+                    AND t.reference_date>=? AND t.reference_date<?
+                    GROUP BY c.id,COALESCE(cp.name,c.name) ORDER BY total DESC
                     """)) {
                 statement.setLong(1,householdId); statement.setString(2,start); statement.setString(3,end);
                 try (var r=statement.executeQuery()) { while(r.next()) byCategory.put(r.getString(1), MoneyUtils.fromCents(r.getLong(2))); }

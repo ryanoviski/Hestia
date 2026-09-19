@@ -33,11 +33,6 @@
             <Button text="Configurações" userData="settings" onAction="#navigate" styleClass="nav-button" />
         </VBox>
     </left>
-    <top>
-        <HBox alignment="CENTER_LEFT" styleClass="topbar">
-            <Label fx:id="pageTitle" text="Painel" styleClass="page-title" />
-        </HBox>
-    </top>
     <center>
         <StackPane fx:id="contentArea" styleClass="content-area" />
     </center>

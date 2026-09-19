@@ -97,7 +97,7 @@ public final class TransactionService {
         if (!profile.active() && (existing == null || existing.profileId() != profile.id()))
             throw new ValidationException("O perfil selecionado está inativo.");
 
-        Category category = categories.findById(input.categoryId())
+        Category category = categories.findById(input.categoryId(), householdId)
                 .orElseThrow(() -> new ValidationException("Selecione uma categoria válida."));
         if (category.householdId() != null && category.householdId() != householdId)
             throw new ValidationException("Categoria inválida para este grupo.");

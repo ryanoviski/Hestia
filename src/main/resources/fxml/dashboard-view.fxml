@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import io.github.ryanoviski.hestia.presentation.components.MonthYearPicker?>
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="io.github.ryanoviski.hestia.presentation.controllers.DashboardController"
       spacing="18" styleClass="view">
-    <HBox alignment="CENTER_LEFT"><VBox spacing="5" HBox.hgrow="ALWAYS"><Label text="Seu mês financeiro" styleClass="view-heading"/><Label text="Valores realizados e planejados a partir das suas movimentações." styleClass="view-subtitle"/></VBox><TextField fx:id="monthField" promptText="MM/AAAA" prefWidth="105"/><Button text="Atualizar" onAction="#refresh" styleClass="secondary-button"/></HBox>
+    <FlowPane alignment="CENTER_LEFT" hgap="12" vgap="10">
+        <VBox spacing="5" minWidth="360" prefWidth="650"><Label text="Seu mês financeiro" styleClass="view-heading"/><Label text="Valores realizados e planejados a partir das suas movimentações." wrapText="true" styleClass="view-subtitle"/></VBox>
+        <MonthYearPicker fx:id="monthPicker"/>
+        <Button text="Atualizar" onAction="#refresh" styleClass="secondary-button"/>
+    </FlowPane>
     <FlowPane hgap="12" vgap="12" prefWrapLength="900">
         <VBox prefWidth="185" spacing="7" styleClass="summary-card,income-card"><Label text="RECEITAS RECEBIDAS" styleClass="card-label"/><Label fx:id="receivedIncome" styleClass="metric-value"/><Label fx:id="expectedIncome" styleClass="card-help"/></VBox>
         <VBox prefWidth="185" spacing="7" styleClass="summary-card,expense-card"><Label text="DESPESAS PAGAS" styleClass="card-label"/><Label fx:id="paidExpenses" styleClass="metric-value"/><Label fx:id="pendingExpenses" styleClass="card-help"/></VBox>

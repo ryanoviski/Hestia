@@ -40,10 +40,11 @@ class FinancialFlowIntegrationTest {
     private Category incomeCategory;
     private Category expenseCategory;
     private Clock clock;
+    private ConnectionFactory factory;
 
     @BeforeEach void setUp() throws Exception {
         Path database=directory.resolve("isolated").resolve("hestia.db"); Files.createDirectories(database.getParent());
-        ConnectionFactory factory=new ConnectionFactory(database); new DatabaseInitializer(factory).initialize();
+        factory=new ConnectionFactory(database); new DatabaseInitializer(factory).initialize();
         var profileRepository=new SqliteProfileRepository(factory); var categoryRepository=new SqliteCategoryRepository(factory); var transactionRepository=new SqliteTransactionRepository(factory);
         clock=Clock.fixed(Instant.parse("2026-09-18T12:00:00Z"), ZoneOffset.UTC);
         profiles=new ProfileService(profileRepository); categories=new CategoryService(categoryRepository,profileRepository);
@@ -65,6 +66,46 @@ class FinancialFlowIntegrationTest {
         assertThat(categories.search(CategoryType.EXPENSE,"Pets",true)).singleElement().satisfies(category->assertThat(category.active()).isFalse());
         categories.setActive(created.id(),true);
         assertThat(categories.search(CategoryType.EXPENSE,"Pets",false)).hasSize(1);
+    }
+
+    @Test void customizesAndHidesDefaultCategoryOnlyForTheHousehold() throws Exception {
+        Category customized = categories.update(expenseCategory.id(), "Casa e moradia",
+                CategoryType.EXPENSE, "#2F7F77");
+        assertThat(customized.standard()).isTrue();
+        assertThat(categories.search(CategoryType.EXPENSE, "Casa e moradia", false))
+                .singleElement().extracting(Category::color).isEqualTo("#2F7F77");
+
+        try (var connection = factory.openConnection();
+             var result = connection.prepareStatement("SELECT name FROM categories WHERE id = ?")) {
+            result.setLong(1, expenseCategory.id());
+            try (var row = result.executeQuery()) {
+                assertThat(row.getString(1)).isEqualTo(expenseCategory.name());
+            }
+        }
+
+        categories.setActive(expenseCategory.id(), false);
+        assertThat(categories.search(CategoryType.EXPENSE, "Casa e moradia", false)).isEmpty();
+        assertThat(categories.search(CategoryType.EXPENSE, "Casa e moradia", true))
+                .singleElement().extracting(Category::active).isEqualTo(false);
+        categories.setActive(expenseCategory.id(), true);
+        assertThat(categories.search(CategoryType.EXPENSE, "Casa e moradia", false)).hasSize(1);
+    }
+
+    @Test void safelyDeletesOnlyUnusedProfilesAndCategories() {
+        Profile unusedProfile = profiles.createProfile("Bruno", ProfileType.PERSON, "#2F7F77");
+        Category unusedCategory = categories.create("Temporária", CategoryType.EXPENSE, "#3F6FA0");
+        profiles.deleteProfile(unusedProfile.id());
+        categories.delete(unusedCategory.id());
+        assertThat(profiles.listProfiles()).extracting(Profile::name).doesNotContain("Bruno");
+        assertThat(categories.search(CategoryType.EXPENSE, "Temporária", true)).isEmpty();
+
+        Category usedCategory = categories.create("Usada", CategoryType.EXPENSE, null);
+        transactions.create(input(TransactionType.EXPENSE, usedCategory, "Compra", BigDecimal.TEN,
+                TransactionStatus.PENDING, LocalDate.of(2026, 9, 30), null));
+        assertThatThrownBy(() -> categories.delete(usedCategory.id()))
+                .isInstanceOf(ValidationException.class).hasMessageContaining("Desative-a");
+        assertThatThrownBy(() -> profiles.deleteProfile(activeProfile.id()))
+                .isInstanceOf(ValidationException.class).hasMessageContaining("Desative-o");
     }
 
     @Test void createsEditsSettlesReopensAndCancelsTransactions() {

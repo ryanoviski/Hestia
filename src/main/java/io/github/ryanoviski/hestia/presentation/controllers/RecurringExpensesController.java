@@ -7,26 +7,189 @@ import io.github.ryanoviski.hestia.domain.exceptions.ValidationException;
 import io.github.ryanoviski.hestia.domain.models.Category;
 import io.github.ryanoviski.hestia.domain.models.Profile;
 import io.github.ryanoviski.hestia.domain.models.RecurringExpense;
+import io.github.ryanoviski.hestia.presentation.components.ComboBoxSupport;
+import io.github.ryanoviski.hestia.presentation.components.ThemeManager;
 import io.github.ryanoviski.hestia.util.MoneyUtils;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 public final class RecurringExpensesController {
-    private static final DateTimeFormatter DATE=DateTimeFormatter.ofPattern("dd/MM/yyyy");
-    @FXML private TextField searchField; @FXML private ComboBox<Profile> profileFilter;
-    @FXML private ComboBox<Category> categoryFilter; @FXML private VBox list; @FXML private Label emptyState;
+    private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    @FXML private TextField searchField;
+    @FXML private ComboBox<Profile> profileFilter;
+    @FXML private ComboBox<Category> categoryFilter;
+    @FXML private VBox list;
+    @FXML private Label emptyState;
     private ApplicationContext context;
-    public void configure(ApplicationContext context){this.context=context;profileFilter.getItems().setAll(context.profileService().listProfiles());categoryFilter.getItems().setAll(context.categoryService().search(CategoryType.EXPENSE,null,false));refresh();}
-    @FXML private void refresh(){if(context==null)return;var items=context.recurringExpenseService().search(searchField.getText(),id(profileFilter.getValue()),id(categoryFilter.getValue()));list.getChildren().clear();items.forEach(i->list.getChildren().add(row(i)));emptyState.setVisible(items.isEmpty());emptyState.setManaged(items.isEmpty());if(items.isEmpty())list.getChildren().add(emptyState);}
-    @FXML private void create(){form(null);}
-    private HBox row(RecurringExpense item){Label name=new Label(item.description());name.getStyleClass().add("transaction-description");String next=item.nextDueDate()==null?"Sem próximo vencimento":"Próximo: "+DATE.format(item.nextDueDate());VBox info=new VBox(4,name,new Label(item.profileName()+" · "+item.categoryName()+" · "+next));Label amount=new Label(MoneyUtils.formatCents(item.amountCents()));amount.getStyleClass().add("transaction-amount");Label active=new Label(item.active()?"Ativa":"Inativa");active.getStyleClass().addAll("status-pill",item.active()?"status-settled":"status-cancelled");Region spacer=new Region();HBox.setHgrow(spacer,Priority.ALWAYS);Button edit=button("Editar",()->form(item));Button toggle=button(item.active()?"Desativar":"Ativar",()->toggle(item));HBox row=new HBox(10,info,spacer,active,amount,edit,toggle);row.setAlignment(Pos.CENTER_LEFT);row.getStyleClass().add("transaction-row");return row;}
-    private void toggle(RecurringExpense item){boolean cancel=false;if(item.active()){Alert a=new Alert(Alert.AlertType.CONFIRMATION,"Interromper somente novas gerações? Escolha Cancelar pendentes para também cancelar ocorrências futuras pendentes e não personalizadas.",ButtonType.CANCEL,new ButtonType("Somente desativar"),new ButtonType("Cancelar pendentes"));a.setHeaderText("Desativar recorrência");var answer=a.showAndWait().orElse(ButtonType.CANCEL);if(answer==ButtonType.CANCEL)return;cancel=answer.getText().equals("Cancelar pendentes");}context.recurringExpenseService().setActive(item.id(),!item.active(),cancel);refresh();}
-    private void form(RecurringExpense old){Dialog<Void>d=new Dialog<>();d.setTitle(old==null?"Nova recorrência":"Editar recorrência");ButtonType save=new ButtonType("Salvar",ButtonBar.ButtonData.OK_DONE);d.getDialogPane().getButtonTypes().addAll(save,ButtonType.CANCEL);TextField description=new TextField(old==null?"":old.description());TextField amount=new TextField(old==null?"":old.amount().toPlainString().replace('.',','));ComboBox<Profile> profile=new ComboBox<>();profile.getItems().setAll(context.profileService().listProfiles());ComboBox<Category> category=new ComboBox<>();category.getItems().setAll(context.categoryService().search(CategoryType.EXPENSE,null,old!=null));select(profile,category,old);DatePicker first=new DatePicker(old==null?LocalDate.now():old.firstDueDate());DatePicker end=new DatePicker(old==null?null:old.endDate());TextArea notes=new TextArea(old==null?"":old.notes());CheckBox active=new CheckBox("Ativa");active.setSelected(old==null||old.active());Label hint=new Label(old==null?"Serão geradas ocorrências até 12 meses à frente.":"A alteração atualiza somente ocorrências futuras, pendentes e não personalizadas.");hint.setWrapText(true);hint.getStyleClass().add("origin-notice");Label error=new Label();error.getStyleClass().add("form-error");GridPane g=grid();int r=0;g.add(hint,0,r++,2,1);add(g,r++,"Descrição",description);add(g,r++,"Valor previsto",amount);add(g,r++,"Perfil",profile);add(g,r++,"Categoria",category);add(g,r++,"Primeiro vencimento",first);add(g,r++,"Data final (opcional)",end);add(g,r++,"Observações",notes);g.add(active,1,r++);g.add(error,1,r);d.getDialogPane().setContent(g);d.getDialogPane().setPrefWidth(570);((Button)d.getDialogPane().lookupButton(save)).addEventFilter(javafx.event.ActionEvent.ACTION,e->{e.consume();try{var input=new RecurringExpenseInput(description.getText(),MoneyUtils.parseBrazilian(amount.getText()),profile.getValue()==null?0:profile.getValue().id(),category.getValue()==null?0:category.getValue().id(),first.getValue(),end.getValue(),notes.getText(),active.isSelected());if(old==null)context.recurringExpenseService().create(input);else context.recurringExpenseService().update(old.id(),input);d.close();refresh();}catch(ValidationException ex){error.setText(ex.getMessage());}});d.showAndWait();}
-    private void select(ComboBox<Profile>p,ComboBox<Category>c,RecurringExpense old){if(old==null){p.getItems().stream().filter(Profile::active).findFirst().ifPresent(p::setValue);c.getItems().stream().filter(Category::active).findFirst().ifPresent(c::setValue);}else{p.getItems().stream().filter(x->x.id().equals(old.profileId())).findFirst().ifPresent(p::setValue);c.getItems().stream().filter(x->x.id().equals(old.categoryId())).findFirst().ifPresent(c::setValue);}}
-    private GridPane grid(){GridPane g=new GridPane();g.setHgap(10);g.setVgap(8);g.setPadding(new Insets(8));return g;}private void add(GridPane g,int r,String l,Control c){g.add(new Label(l),0,r);c.setMaxWidth(Double.MAX_VALUE);g.add(c,1,r);GridPane.setHgrow(c,Priority.ALWAYS);}private Button button(String t,Runnable r){Button b=new Button(t);b.getStyleClass().add("table-action");b.setOnAction(e->r.run());return b;}private Long id(Profile p){return p==null?null:p.id();}private Long id(Category c){return c==null?null:c.id();}
+
+    public void configure(ApplicationContext context) {
+        this.context = context;
+        ComboBoxSupport.profiles(profileFilter);
+        ComboBoxSupport.categories(categoryFilter);
+        profileFilter.getItems().setAll(context.profileService().listProfiles());
+        categoryFilter.getItems().setAll(context.categoryService().search(CategoryType.EXPENSE, null, false));
+        refresh();
+    }
+
+    @FXML private void refresh() {
+        if (context == null) return;
+        var items = context.recurringExpenseService().search(searchField.getText(), id(profileFilter.getValue()), id(categoryFilter.getValue()));
+        list.getChildren().clear();
+        items.forEach(item -> list.getChildren().add(row(item)));
+        emptyState.setVisible(items.isEmpty());
+        emptyState.setManaged(items.isEmpty());
+        if (items.isEmpty()) list.getChildren().add(emptyState);
+    }
+
+    @FXML private void create() { form(null); }
+
+    private HBox row(RecurringExpense item) {
+        Label name = new Label(item.description());
+        name.getStyleClass().add("transaction-description");
+        String next = item.nextDueDate() == null ? "Sem próximo vencimento" : "Próximo: " + DATE.format(item.nextDueDate());
+        Label details = new Label(item.profileName() + " · " + item.categoryName() + " · " + next);
+        details.setWrapText(true);
+        VBox info = new VBox(4, name, details);
+        Label amount = new Label(MoneyUtils.formatCents(item.amountCents()));
+        amount.getStyleClass().add("transaction-amount");
+        Label active = new Label(item.active() ? "Ativa" : "Inativa");
+        active.getStyleClass().addAll("status-pill", item.active() ? "status-settled" : "status-cancelled");
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        MenuButton actions = new MenuButton("Ações");
+        actions.getStyleClass().add("secondary-button");
+        actions.getItems().add(menu("Editar", () -> form(item)));
+        actions.getItems().add(menu(item.active() ? "Desativar" : "Reativar", () -> toggle(item)));
+        HBox row = new HBox(10, info, spacer, active, amount, actions);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.getStyleClass().add("transaction-row");
+        return row;
+    }
+
+    private void toggle(RecurringExpense item) {
+        boolean cancelPending = false;
+        if (item.active()) {
+            ButtonType deactivate = new ButtonType("Somente desativar");
+            ButtonType cancel = new ButtonType("Desativar e cancelar pendentes");
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
+                    "Escolha se as ocorrências futuras ainda pendentes também devem ser canceladas.",
+                    ButtonType.CANCEL, deactivate, cancel);
+            alert.setHeaderText("Desativar recorrência");
+            ThemeManager.apply(alert);
+            ButtonType answer = alert.showAndWait().orElse(ButtonType.CANCEL);
+            if (answer == ButtonType.CANCEL) return;
+            cancelPending = answer == cancel;
+        }
+        context.recurringExpenseService().setActive(item.id(), !item.active(), cancelPending);
+        refresh();
+    }
+
+    private void form(RecurringExpense existing) {
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle(existing == null ? "Nova recorrência" : "Editar recorrência");
+        dialog.setHeaderText(existing == null ? "Cadastre um compromisso mensal" : "Atualize os próximos compromissos");
+        ButtonType saveType = new ButtonType("Salvar recorrência", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(saveType, ButtonType.CANCEL);
+
+        TextField description = new TextField(existing == null ? "" : existing.description());
+        TextField amount = new TextField(existing == null ? "" : existing.amount().toPlainString().replace('.', ','));
+        ComboBox<Profile> profile = new ComboBox<>();
+        profile.getItems().setAll(context.profileService().listProfiles());
+        ComboBoxSupport.profiles(profile);
+        ComboBox<Category> category = new ComboBox<>();
+        category.getItems().setAll(context.categoryService().search(CategoryType.EXPENSE, null, existing != null));
+        ComboBoxSupport.categories(category);
+        select(profile, category, existing);
+        DatePicker first = new DatePicker(existing == null ? LocalDate.now() : existing.firstDueDate());
+        DatePicker end = new DatePicker(existing == null ? null : existing.endDate());
+        TextArea notes = new TextArea(existing == null ? "" : existing.notes());
+        notes.setPrefRowCount(3);
+        notes.setWrapText(true);
+        CheckBox active = new CheckBox("Recorrência ativa");
+        active.setSelected(existing == null || existing.active());
+        Label hint = new Label(existing == null
+                ? "O Hestia gerará ocorrências mensais até 12 meses à frente."
+                : "A alteração alcança apenas ocorrências futuras, pendentes e ainda não personalizadas.");
+        hint.setWrapText(true);
+        hint.getStyleClass().add("origin-notice");
+        Label error = new Label();
+        error.setWrapText(true);
+        error.getStyleClass().add("form-error");
+
+        GridPane grid = grid();
+        int row = 0;
+        grid.add(hint, 0, row++, 2, 1);
+        add(grid, row++, "Descrição *", description);
+        add(grid, row++, "Valor previsto *", amount);
+        add(grid, row++, "Perfil *", profile);
+        add(grid, row++, "Categoria *", category);
+        add(grid, row++, "Primeiro vencimento *", first);
+        add(grid, row++, "Data final (opcional)", end);
+        add(grid, row++, "Observações", notes);
+        grid.add(active, 1, row++);
+        grid.add(error, 1, row);
+        ScrollPane scroll = new ScrollPane(grid);
+        scroll.setFitToWidth(true);
+        dialog.getDialogPane().setContent(scroll);
+        ThemeManager.apply(dialog, 650, 650);
+
+        ((Button) dialog.getDialogPane().lookupButton(saveType)).addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            event.consume();
+            try {
+                var input = new RecurringExpenseInput(description.getText(), MoneyUtils.parseBrazilian(amount.getText()),
+                        profile.getValue() == null ? 0 : profile.getValue().id(), category.getValue() == null ? 0 : category.getValue().id(),
+                        first.getValue(), end.getValue(), notes.getText(), active.isSelected());
+                if (existing == null) context.recurringExpenseService().create(input);
+                else context.recurringExpenseService().update(existing.id(), input);
+                dialog.close();
+                refresh();
+            } catch (ValidationException exception) {
+                error.setText(exception.getMessage());
+            }
+        });
+        dialog.showAndWait();
+    }
+
+    private void select(ComboBox<Profile> profiles, ComboBox<Category> categories, RecurringExpense existing) {
+        if (existing == null) {
+            profiles.getItems().stream().filter(Profile::active).findFirst().ifPresent(profiles::setValue);
+            categories.getItems().stream().filter(Category::active).findFirst().ifPresent(categories::setValue);
+        } else {
+            profiles.getItems().stream().filter(item -> item.id().equals(existing.profileId())).findFirst().ifPresent(profiles::setValue);
+            categories.getItems().stream().filter(item -> item.id().equals(existing.categoryId())).findFirst().ifPresent(categories::setValue);
+        }
+    }
+
+    private GridPane grid() {
+        GridPane grid = new GridPane();
+        grid.setHgap(14);
+        grid.setVgap(11);
+        grid.setPadding(new Insets(8));
+        return grid;
+    }
+
+    private void add(GridPane grid, int row, String text, Control control) {
+        Label label = new Label(text);
+        label.getStyleClass().add("field-label");
+        label.setMinWidth(170);
+        grid.add(label, 0, row);
+        control.setMaxWidth(Double.MAX_VALUE);
+        grid.add(control, 1, row);
+        GridPane.setHgrow(control, Priority.ALWAYS);
+    }
+
+    private MenuItem menu(String text, Runnable action) {
+        MenuItem item = new MenuItem(text);
+        item.setOnAction(event -> action.run());
+        return item;
+    }
+
+    private Long id(Profile profile) { return profile == null ? null : profile.id(); }
+    private Long id(Category category) { return category == null ? null : category.id(); }
 }

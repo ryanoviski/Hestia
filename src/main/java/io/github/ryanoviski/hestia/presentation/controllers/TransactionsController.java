@@ -12,6 +12,9 @@ import io.github.ryanoviski.hestia.domain.exceptions.ValidationException;
 import io.github.ryanoviski.hestia.domain.models.Category;
 import io.github.ryanoviski.hestia.domain.models.Profile;
 import io.github.ryanoviski.hestia.domain.models.Transaction;
+import io.github.ryanoviski.hestia.presentation.components.ComboBoxSupport;
+import io.github.ryanoviski.hestia.presentation.components.MonthYearPicker;
+import io.github.ryanoviski.hestia.presentation.components.ThemeManager;
 import io.github.ryanoviski.hestia.util.MoneyUtils;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
@@ -24,22 +27,19 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.FileChooser;
-import javafx.util.StringConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 
 public final class TransactionsController {
     private static final Logger LOGGER = LoggerFactory.getLogger(TransactionsController.class);
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     @FXML private Label heading;
     @FXML private TextField searchField;
-    @FXML private TextField monthField;
+    @FXML private MonthYearPicker monthPicker;
     @FXML private ComboBox<TransactionType> typeFilter;
     @FXML private ComboBox<TransactionStatus> statusFilter;
     @FXML private ComboBox<Profile> profileFilter;
@@ -57,24 +57,24 @@ public final class TransactionsController {
     public void configure(ApplicationContext context, TransactionType fixedType, boolean payableMode) {
         this.context = context; this.fixedType = fixedType; this.payableMode = payableMode;
         heading.setText(payableMode ? "Contas a pagar" : fixedType == TransactionType.INCOME ? "Receitas" : "Movimentações");
-        monthField.setText(YearMonth.now().format(DateTimeFormatter.ofPattern("MM/yyyy")));
+        monthPicker.setValue(java.time.YearMonth.now());
         typeFilter.getItems().setAll(TransactionType.values()); typeFilter.setValue(fixedType); typeFilter.setDisable(fixedType != null);
         statusFilter.getItems().setAll(TransactionStatus.values());
         originFilter.getItems().setAll(TransactionOrigin.values());
-        originFilter.setConverter(new StringConverter<>() {
-            @Override public String toString(TransactionOrigin value) { return value == null ? "" : value.displayName(); }
-            @Override public TransactionOrigin fromString(String value) { return null; }
-        });
+        ComboBoxSupport.configure(typeFilter, TransactionType::displayName);
+        ComboBoxSupport.configure(originFilter, TransactionOrigin::displayName);
         configureStatusLabels(statusFilter, () -> fixedType);
         if (payableMode) statusFilter.setValue(TransactionStatus.PENDING);
         profileFilter.getItems().setAll(context.profileService().listProfiles());
+        ComboBoxSupport.profiles(profileFilter);
+        ComboBoxSupport.categories(categoryFilter);
         loadCategoryFilter();
         refresh();
     }
 
     @FXML private void applyFilters() { loadCategoryFilter(); refresh(); }
     @FXML private void clearFilters() {
-        searchField.clear(); monthField.setText(YearMonth.now().format(DateTimeFormatter.ofPattern("MM/yyyy")));
+        searchField.clear(); monthPicker.setValue(java.time.YearMonth.now());
         typeFilter.setValue(fixedType); statusFilter.setValue(payableMode ? TransactionStatus.PENDING : null);
         profileFilter.setValue(null); categoryFilter.setValue(null); originFilter.setValue(null); overdueOnly.setSelected(false); refresh();
     }
@@ -83,7 +83,7 @@ public final class TransactionsController {
     private void refresh() {
         if (context == null) return;
         try {
-            YearMonth month = parseMonth();
+            var month = monthPicker.getValue();
             TransactionType type = fixedType == null ? typeFilter.getValue() : fixedType;
             var filter = new TransactionFilter(searchField.getText(), month, type, statusFilter.getValue(),
                     id(profileFilter.getValue()), id(categoryFilter.getValue()), overdueOnly.isSelected(), payableMode,
@@ -109,15 +109,17 @@ public final class TransactionsController {
         status.getStyleClass().addAll("status-pill", "status-" + (item.isOverdue(Clock.systemDefaultZone()) ? "overdue" : item.status().name().toLowerCase()));
         Label amount = new Label(MoneyUtils.formatCents(item.amountCents())); amount.getStyleClass().add("transaction-amount");
         Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
-        Button view = action("Ver", () -> view(item)); Button edit = action("Editar", () -> showForm(item));
-        Button settle = action(item.status() == TransactionStatus.SETTLED ? "Reabrir" : item.type() == TransactionType.INCOME ? "Receber" : "Pagar",
-                () -> changeSettlement(item));
-        Button cancel = action("Cancelar", () -> cancel(item));
-        HBox actions = new HBox(6, view, edit);
-        actions.getChildren().add(action("Anexos", () -> attachments(item)));
-        if (item.origin() != TransactionOrigin.MANUAL) actions.getChildren().add(action("Ver origem", () -> viewOrigin(item)));
-        if (item.status() != TransactionStatus.CANCELLED) actions.getChildren().add(settle);
-        if (item.status() != TransactionStatus.CANCELLED) actions.getChildren().add(cancel);
+        MenuButton actions = new MenuButton("Ações");
+        actions.getStyleClass().add("secondary-button");
+        actions.getItems().add(menu("Ver detalhes", () -> view(item)));
+        actions.getItems().add(menu("Editar", () -> showForm(item)));
+        actions.getItems().add(menu("Anexos", () -> attachments(item)));
+        if (item.origin() != TransactionOrigin.MANUAL) actions.getItems().add(menu("Ver origem", () -> viewOrigin(item)));
+        if (item.status() != TransactionStatus.CANCELLED) {
+            actions.getItems().add(menu(item.status() == TransactionStatus.SETTLED ? "Reabrir"
+                    : item.type() == TransactionType.INCOME ? "Receber" : "Pagar", () -> changeSettlement(item)));
+            actions.getItems().add(menu("Cancelar", () -> cancel(item)));
+        }
         HBox row = new HBox(12, identity, spacer, status, amount, actions); row.setAlignment(Pos.CENTER_LEFT); row.getStyleClass().add("transaction-row");
         if (item.status() == TransactionStatus.CANCELLED) row.getStyleClass().add("transaction-cancelled");
         if (item.isOverdue(Clock.systemDefaultZone())) row.getStyleClass().add("transaction-overdue");
@@ -125,17 +127,21 @@ public final class TransactionsController {
     }
 
     private Button action(String text, Runnable runnable) { Button button = new Button(text); button.getStyleClass().add("table-action"); button.setOnAction(event -> runnable.run()); return button; }
+    private MenuItem menu(String text, Runnable runnable) { MenuItem item = new MenuItem(text); item.setOnAction(event -> runnable.run()); return item; }
 
     private void showForm(Transaction existing) {
         Dialog<Void> dialog = new Dialog<>(); dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.setTitle(existing == null ? "Nova movimentação" : "Editar movimentação");
         ButtonType saveType = new ButtonType("Salvar", ButtonBar.ButtonData.OK_DONE); dialog.getDialogPane().getButtonTypes().addAll(saveType, ButtonType.CANCEL);
         ComboBox<TransactionType> type = new ComboBox<>(); type.getItems().setAll(TransactionType.values()); type.setValue(existing == null ? (fixedType == null ? TransactionType.EXPENSE : fixedType) : existing.type()); type.setDisable(fixedType != null);
+        ComboBoxSupport.configure(type, TransactionType::displayName);
         TextField description = new TextField(existing == null ? "" : existing.description());
         TextField amount = new TextField(existing == null ? "" : MoneyUtils.fromCents(existing.amountCents()).toPlainString().replace('.', ','));
         if (existing != null && existing.origin() == TransactionOrigin.INSTALLMENT) amount.setDisable(true);
         ComboBox<Profile> profile = new ComboBox<>(); profile.getItems().setAll(context.profileService().listProfiles().stream().filter(p -> existing != null || p.active()).toList()); selectProfile(profile, existing);
+        ComboBoxSupport.profiles(profile);
         ComboBox<Category> category = new ComboBox<>();
+        ComboBoxSupport.categories(category);
         DatePicker reference = new DatePicker(existing == null ? LocalDate.now() : existing.referenceDate());
         DatePicker due = new DatePicker(existing == null ? null : existing.dueDate());
         ComboBox<TransactionStatus> status = new ComboBox<>(); status.getItems().setAll(TransactionStatus.values()); status.setValue(existing == null ? TransactionStatus.PENDING : existing.status());
@@ -157,7 +163,8 @@ public final class TransactionsController {
         type.valueProperty().addListener((o,a,b) -> loadCategories.run()); loadCategories.run();
         GridPane grid = new GridPane(); grid.setHgap(12); grid.setVgap(9); grid.setPadding(new Insets(8));
         int r=0; if (!originNotice.getText().isEmpty()) grid.add(originNotice,0,r++,2,1); add(grid,r++,"Tipo",type); add(grid,r++,"Descrição",description); add(grid,r++,"Valor",amount); add(grid,r++,"Perfil",profile); add(grid,r++,"Categoria",category); add(grid,r++,"Data de referência",reference); add(grid,r++,"Data prevista / vencimento",due); add(grid,r++,"Situação",status); add(grid,r++,"Data de conclusão",settlement); add(grid,r++,"Observações",notes); grid.add(error,1,r);
-        dialog.getDialogPane().setContent(grid); dialog.getDialogPane().setPrefWidth(570);
+        ScrollPane formScroll = new ScrollPane(grid); formScroll.setFitToWidth(true); formScroll.setPannable(true);
+        dialog.getDialogPane().setContent(formScroll); ThemeManager.apply(dialog, 650, 680);
         Button save = (Button) dialog.getDialogPane().lookupButton(saveType);
         save.disableProperty().bind(description.textProperty().isEmpty().or(amount.textProperty().isEmpty()).or(profile.valueProperty().isNull()).or(category.valueProperty().isNull()));
         save.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
@@ -179,6 +186,7 @@ public final class TransactionsController {
     private void cancel(Transaction item) {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Cancelar \"" + item.description() + "\"? O registro continuará no histórico.", ButtonType.CANCEL, ButtonType.OK);
         confirm.setHeaderText("Cancelar movimentação");
+        ThemeManager.apply(confirm);
         if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
             try { context.transactionService().cancel(item.id()); refresh(); }
             catch (RuntimeException exception) { LOGGER.error("Could not cancel transaction", exception); showError("Não foi possível cancelar a movimentação."); }
@@ -186,7 +194,7 @@ public final class TransactionsController {
     }
     private void view(Transaction item) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION); alert.setHeaderText(item.description()); alert.setTitle("Movimentação");
-        alert.setContentText("Origem: " + (item.originDetails()==null?item.origin().displayName():item.originDetails()) + "\nTipo: " + item.type().displayName() + "\nSituação: " + item.status().displayName(item.type()) + "\nValor: " + MoneyUtils.formatCents(item.amountCents()) + "\nPerfil: " + item.profileName() + "\nCategoria: " + item.categoryName() + "\nReferência: " + DATE.format(item.referenceDate()) + (item.notes() == null ? "" : "\n\nObservações:\n" + item.notes())); alert.showAndWait();
+        alert.setContentText("Origem: " + (item.originDetails()==null?item.origin().displayName():item.originDetails()) + "\nTipo: " + item.type().displayName() + "\nSituação: " + item.status().displayName(item.type()) + "\nValor: " + MoneyUtils.formatCents(item.amountCents()) + "\nPerfil: " + item.profileName() + "\nCategoria: " + item.categoryName() + "\nReferência: " + DATE.format(item.referenceDate()) + (item.notes() == null ? "" : "\n\nObservações:\n" + item.notes())); ThemeManager.apply(alert); alert.showAndWait();
     }
     private void viewOrigin(Transaction item) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -195,7 +203,7 @@ public final class TransactionsController {
         alert.setContentText((item.originDetails() == null ? item.origin().displayName() : item.originDetails())
                 + "\nIdentificador da origem: " + item.originId()
                 + "\n\nUse Recorrências ou Parcelamentos para administrar a origem sem alterar o histórico desta movimentação.");
-        alert.showAndWait();
+        ThemeManager.apply(alert); alert.showAndWait();
     }
     private void attachments(Transaction item) {
         Dialog<Void> dialog = new Dialog<>(); dialog.setTitle("Anexos · " + item.description());
@@ -227,23 +235,18 @@ public final class TransactionsController {
             } catch (RuntimeException exception) { showError(exception.getMessage()); }
         });
         content.getChildren().add(add); load.run(); dialog.getDialogPane().setContent(content);
-        dialog.getDialogPane().setPrefWidth(560); dialog.showAndWait();
+        ThemeManager.apply(dialog, 620, 500); dialog.showAndWait();
     }
     private void loadCategoryFilter() { if(context==null)return; TransactionType type=fixedType==null?typeFilter.getValue():fixedType; Category current=categoryFilter.getValue(); categoryFilter.getItems().setAll(context.categoryService().search(type==null?null:type.categoryType(),null,false)); if(current!=null&&categoryFilter.getItems().contains(current))categoryFilter.setValue(current); }
-    private YearMonth parseMonth() { if(monthField.getText()==null||monthField.getText().isBlank())return null; try{return YearMonth.parse(monthField.getText().trim(),DateTimeFormatter.ofPattern("MM/yyyy"));}catch(DateTimeParseException e){throw new ValidationException("Informe o mês no formato MM/AAAA.");} }
     private Long id(Profile p){return p==null?null:p.id();} private Long id(Category c){return c==null?null:c.id();}
     private void selectProfile(ComboBox<Profile> box,Transaction t){if(t!=null)box.getItems().stream().filter(p->p.id().equals(t.profileId())).findFirst().ifPresent(box::setValue);else box.getItems().stream().filter(Profile::active).findFirst().ifPresent(box::setValue);}
-    private void add(GridPane grid,int row,String label,Control control){grid.add(new Label(label),0,row);control.setMaxWidth(Double.MAX_VALUE);grid.add(control,1,row);GridPane.setHgrow(control,Priority.ALWAYS);}
+    private void add(GridPane grid,int row,String label,Control control){Label fieldLabel=new Label(label + (label.equals("Observações") || label.contains("prevista") || label.contains("conclusão") ? "" : " *"));fieldLabel.getStyleClass().add("field-label");fieldLabel.setMinWidth(170);grid.add(fieldLabel,0,row);control.setMaxWidth(Double.MAX_VALUE);grid.add(control,1,row);GridPane.setHgrow(control,Priority.ALWAYS);}
     private void configureStatusLabels(ComboBox<TransactionStatus> combo, java.util.function.Supplier<TransactionType> type) {
-        combo.setConverter(new StringConverter<>() {
-            @Override public String toString(TransactionStatus status) {
-                if (status == null) return "";
-                TransactionType selected = type.get();
-                return selected == null ? switch (status) { case PENDING -> "Pendente"; case SETTLED -> "Concluída"; case CANCELLED -> "Cancelada"; }
-                        : status.displayName(selected);
-            }
-            @Override public TransactionStatus fromString(String string) { return null; }
+        ComboBoxSupport.configure(combo, status -> {
+            TransactionType selected = type.get();
+            return selected == null ? switch (status) { case PENDING -> "Pendente"; case SETTLED -> "Concluída"; case CANCELLED -> "Cancelada"; }
+                    : status.displayName(selected);
         });
     }
-    private void showError(String message){Alert alert=new Alert(Alert.AlertType.ERROR,message,ButtonType.OK);alert.setHeaderText("Não foi possível concluir a operação");alert.showAndWait();}
+    private void showError(String message){Alert alert=new Alert(Alert.AlertType.ERROR,message,ButtonType.OK);alert.setHeaderText("Não foi possível concluir a operação");ThemeManager.apply(alert);alert.showAndWait();}
 }

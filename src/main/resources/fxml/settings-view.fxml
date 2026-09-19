@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?><?import javafx.scene.layout.*?>
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.github.ryanoviski.hestia.presentation.controllers.SettingsController" spacing="16" styleClass="view">
- <Label text="Configurações" styleClass="view-heading"/><VBox spacing="12" styleClass="panel"><Label text="Backup e restauração" styleClass="panel-title"/><Label text="O backup inclui um snapshot verificado do banco, anexos, manifesto e hashes. Logs e cache não são incluídos." wrapText="true" styleClass="view-subtitle"/><HBox spacing="8"><Button text="Criar backup" onAction="#createBackup" styleClass="primary-button"/><Button text="Restaurar backup" onAction="#restoreBackup" styleClass="secondary-button"/><ProgressIndicator fx:id="progress" visible="false" managed="false" prefWidth="28" prefHeight="28"/></HBox><Separator/><CheckBox fx:id="automaticEnabled" text="Ativar backup automático diário sem senha"/><TextField fx:id="automaticDirectory" promptText="Diretório dos backups automáticos"/><Spinner fx:id="retention"/><Button text="Salvar configuração automática" onAction="#saveAutomatic" styleClass="secondary-button"/><Label fx:id="status" wrapText="true" styleClass="profile-meta"/></VBox>
+ <Label text="Configurações" styleClass="view-heading"/>
+ <VBox spacing="12" styleClass="panel">
+  <Label text="Backup e restauração" styleClass="panel-title"/>
+  <Label text="O backup inclui uma cópia verificada do banco e dos anexos. Logs e arquivos temporários não são incluídos." wrapText="true" styleClass="view-subtitle"/>
+  <FlowPane hgap="8" vgap="8"><Button text="Criar backup" onAction="#createBackup" styleClass="primary-button"/><Button text="Restaurar backup" onAction="#restoreBackup" styleClass="secondary-button"/><ProgressIndicator fx:id="progress" visible="false" managed="false" prefWidth="28" prefHeight="28"/></FlowPane>
+  <Separator/>
+  <Label text="Backup automático" styleClass="panel-title"/>
+  <CheckBox fx:id="automaticEnabled" text="Ativar backup automático diário sem senha"/>
+  <Label text="Pasta de destino *" styleClass="field-label"/>
+  <TextField fx:id="automaticDirectory" promptText="Diretório dos backups automáticos" maxWidth="640"/>
+  <Label text="Quantidade de backups a manter *" styleClass="field-label"/>
+  <Spinner fx:id="retention" maxWidth="180"/>
+  <Button text="Salvar configuração automática" onAction="#saveAutomatic" styleClass="secondary-button"/>
+  <Label fx:id="status" wrapText="true" styleClass="profile-meta"/>
+ </VBox>
 </VBox>
