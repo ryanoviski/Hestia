@@ -88,6 +88,10 @@
     </dependencies>
 
     <build>
+        <!-- Explicit paths avoid unresolved Maven expressions in IntelliJ's compiler model. -->
+        <directory>target</directory>
+        <outputDirectory>target/classes</outputDirectory>
+        <testOutputDirectory>target/test-classes</testOutputDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
