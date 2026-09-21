@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import io.github.ryanoviski.hestia.presentation.components.MonthYearPicker?>
+<ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="io.github.ryanoviski.hestia.presentation.controllers.ReportsController"
+            fitToWidth="true" styleClass="view-scroll">
+    <VBox spacing="22" styleClass="view,content-constrained">
+        <HBox alignment="CENTER_LEFT" spacing="12">
+            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                <Label text="Relatório mensal" styleClass="view-heading"/>
+                <Label text="Entenda o período, compare resultados e compartilhe um resumo em PDF."
+                       wrapText="true" styleClass="view-subtitle"/>
+            </VBox>
+            <Button text="Exportar PDF" onAction="#exportPdf" styleClass="secondary-button"/>
+        </HBox>
+
+        <HBox alignment="CENTER" spacing="10" styleClass="period-toolbar">
+            <Button text="‹" accessibleText="Mês anterior" onAction="#previousMonth" styleClass="icon-button"/>
+            <MonthYearPicker fx:id="monthPicker" minWidth="210" maxWidth="210"/>
+            <Button text="›" accessibleText="Próximo mês" onAction="#nextMonth" styleClass="icon-button"/>
+            <Button text="Atualizar" onAction="#refresh" styleClass="ghost-button"/>
+        </HBox>
+
+        <VBox spacing="5" alignment="CENTER" styleClass="report-hero">
+            <Label fx:id="periodTitle" styleClass="report-period"/>
+            <Label text="RESULTADO PROJETADO" styleClass="eyebrow"/>
+            <Label fx:id="projectedResult" styleClass="hero-value"/>
+        </VBox>
+
+        <GridPane hgap="14" vgap="14">
+            <columnConstraints><ColumnConstraints percentWidth="50"/><ColumnConstraints percentWidth="50"/></columnConstraints>
+            <VBox GridPane.columnIndex="0" spacing="8" styleClass="metric-panel,income-accent">
+                <Label text="Receitas" styleClass="section-title"/><Label fx:id="totalIncome" styleClass="metric-large"/>
+                <HBox spacing="6"><Label text="Recebidas" styleClass="muted-text"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="receivedIncome"/></HBox>
+                <HBox spacing="6"><Label text="Previstas" styleClass="muted-text"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="expectedIncome"/></HBox>
+                <Label fx:id="incomeComparison" wrapText="true" styleClass="comparison-text"/>
+            </VBox>
+            <VBox GridPane.columnIndex="1" spacing="8" styleClass="metric-panel,expense-accent">
+                <Label text="Despesas" styleClass="section-title"/><Label fx:id="totalExpenses" styleClass="metric-large"/>
+                <HBox spacing="6"><Label text="Pagas" styleClass="muted-text"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="paidExpenses"/></HBox>
+                <HBox spacing="6"><Label text="Pendentes" styleClass="muted-text"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="pendingExpenses"/></HBox>
+                <HBox spacing="6"><Label text="Vencidas" styleClass="muted-text"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="overdueExpenses" styleClass="amount-negative"/></HBox>
+                <Label fx:id="expenseComparison" wrapText="true" styleClass="comparison-text"/>
+            </VBox>
+        </GridPane>
+
+        <VBox spacing="8" styleClass="comparison-panel">
+            <Label text="Comparação do resultado" styleClass="section-title"/>
+            <Label fx:id="resultComparison" wrapText="true" styleClass="comparison-text"/>
+        </VBox>
+
+        <GridPane hgap="14" vgap="14">
+            <columnConstraints><ColumnConstraints percentWidth="50"/><ColumnConstraints percentWidth="50"/></columnConstraints>
+            <VBox GridPane.columnIndex="0" spacing="13" styleClass="panel">
+                <Label text="Despesas por categoria" styleClass="section-title"/>
+                <Label text="Onde o dinheiro está concentrado neste mês." styleClass="section-caption"/>
+                <VBox fx:id="categoryList" spacing="12"/>
+            </VBox>
+            <VBox GridPane.columnIndex="1" spacing="13" styleClass="panel">
+                <Label text="Despesas por perfil" styleClass="section-title"/>
+                <Label text="Como os gastos estão distribuídos entre os perfis." styleClass="section-caption"/>
+                <VBox fx:id="profileList" spacing="12"/>
+            </VBox>
+        </GridPane>
+        <Label fx:id="feedback" wrapText="true"/>
+    </VBox>
+</ScrollPane>

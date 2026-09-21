@@ -2,22 +2,64 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import io.github.ryanoviski.hestia.presentation.components.MonthYearPicker?>
-<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="io.github.ryanoviski.hestia.presentation.controllers.DashboardController"
-      spacing="18" styleClass="view">
-    <FlowPane alignment="CENTER_LEFT" hgap="12" vgap="10">
-        <VBox spacing="5" minWidth="360" prefWidth="650"><Label text="Seu mês financeiro" styleClass="view-heading"/><Label text="Valores realizados e planejados a partir das suas movimentações." wrapText="true" styleClass="view-subtitle"/></VBox>
-        <MonthYearPicker fx:id="monthPicker"/>
-        <Button text="Atualizar" onAction="#refresh" styleClass="secondary-button"/>
-    </FlowPane>
-    <FlowPane hgap="12" vgap="12" prefWrapLength="900">
-        <VBox prefWidth="185" spacing="7" styleClass="summary-card,income-card"><Label text="RECEITAS RECEBIDAS" styleClass="card-label"/><Label fx:id="receivedIncome" styleClass="metric-value"/><Label fx:id="expectedIncome" styleClass="card-help"/></VBox>
-        <VBox prefWidth="185" spacing="7" styleClass="summary-card,expense-card"><Label text="DESPESAS PAGAS" styleClass="card-label"/><Label fx:id="paidExpenses" styleClass="metric-value"/><Label fx:id="pendingExpenses" styleClass="card-help"/></VBox>
-        <VBox prefWidth="185" spacing="7" styleClass="summary-card,expense-card"><Label text="DESPESAS VENCIDAS" styleClass="card-label"/><Label fx:id="overdueExpenses" styleClass="metric-value"/><Label text="Pendentes com vencimento anterior a hoje" wrapText="true" styleClass="card-help"/></VBox>
-        <VBox prefWidth="185" spacing="7" styleClass="summary-card,result-card"><Label text="RESULTADOS" styleClass="card-label"/><Label fx:id="realizedResult" styleClass="metric-value"/><Label fx:id="projectedResult" styleClass="card-help"/></VBox>
-    </FlowPane>
-    <HBox spacing="14" VBox.vgrow="ALWAYS">
-        <VBox spacing="12" styleClass="panel" HBox.hgrow="ALWAYS"><Label text="Próximos vencimentos" styleClass="panel-title"/><VBox fx:id="upcomingList" spacing="8"/><Label fx:id="upcomingEmpty" text="Nenhum vencimento futuro pendente." styleClass="empty-description"/></VBox>
-        <VBox spacing="12" prefWidth="350" styleClass="panel"><Label text="Despesas por categoria" styleClass="panel-title"/><VBox fx:id="categoryTotals" spacing="8"/><Label fx:id="categoryEmpty" text="Nenhuma despesa registrada neste mês." styleClass="empty-description"/></VBox>
-    </HBox>
-</VBox>
+<ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="io.github.ryanoviski.hestia.presentation.controllers.DashboardController"
+            fitToWidth="true" styleClass="view-scroll">
+    <VBox spacing="22" styleClass="view,content-constrained">
+        <HBox alignment="CENTER_LEFT" spacing="14">
+            <VBox spacing="4" HBox.hgrow="ALWAYS">
+                <Label text="Visão do mês" styleClass="view-heading"/>
+                <Label text="O essencial para entender suas finanças agora." styleClass="view-subtitle"/>
+            </VBox>
+            <Button text="‹" accessibleText="Mês anterior" onAction="#previousMonth" styleClass="icon-button"/>
+            <MonthYearPicker fx:id="monthPicker" minWidth="210" maxWidth="210"/>
+            <Button text="›" accessibleText="Próximo mês" onAction="#nextMonth" styleClass="icon-button"/>
+        </HBox>
+        <VBox alignment="CENTER" spacing="6" styleClass="dashboard-hero">
+            <Label text="RESULTADO DO MÊS" styleClass="eyebrow"/>
+            <Label fx:id="realizedResult" styleClass="hero-value"/>
+            <Label fx:id="projectedResult" styleClass="hero-caption"/>
+        </VBox>
+        <GridPane hgap="14" vgap="14">
+            <columnConstraints><ColumnConstraints percentWidth="50"/><ColumnConstraints percentWidth="50"/></columnConstraints>
+            <VBox GridPane.columnIndex="0" spacing="8" styleClass="metric-panel,income-accent">
+                <HBox alignment="CENTER_LEFT"><Label text="Receitas" styleClass="section-title"/><Region HBox.hgrow="ALWAYS"/><Label text="ENTRADAS" styleClass="eyebrow"/></HBox>
+                <Label fx:id="receivedIncome" styleClass="metric-large"/>
+                <Label fx:id="expectedIncome" styleClass="section-caption"/>
+            </VBox>
+            <VBox GridPane.columnIndex="1" spacing="8" styleClass="metric-panel,expense-accent">
+                <HBox alignment="CENTER_LEFT"><Label text="Despesas" styleClass="section-title"/><Region HBox.hgrow="ALWAYS"/><Label text="SAÍDAS" styleClass="eyebrow"/></HBox>
+                <Label fx:id="paidExpenses" styleClass="metric-large"/>
+                <Label fx:id="pendingExpenses" styleClass="section-caption"/>
+            </VBox>
+        </GridPane>
+        <HBox alignment="CENTER_LEFT" spacing="12" styleClass="attention-panel">
+            <VBox spacing="2" HBox.hgrow="ALWAYS">
+                <Label text="Despesas vencidas" styleClass="section-title"/>
+                <Label text="Contas pendentes com vencimento anterior a hoje" styleClass="section-caption"/>
+            </VBox>
+            <Label fx:id="overdueExpenses" styleClass="attention-value"/>
+        </HBox>
+        <GridPane hgap="14" vgap="14">
+            <columnConstraints><ColumnConstraints percentWidth="58"/><ColumnConstraints percentWidth="42"/></columnConstraints>
+            <VBox GridPane.columnIndex="0" spacing="13" styleClass="panel">
+                <Label text="Próximos vencimentos" styleClass="section-title"/>
+                <Label text="O que precisa da sua atenção nos próximos dias." styleClass="section-caption"/>
+                <VBox fx:id="upcomingList" spacing="7"/>
+                <VBox fx:id="upcomingEmpty" alignment="CENTER" spacing="5" styleClass="inline-empty">
+                    <Label text="Tudo em dia por aqui" styleClass="empty-title"/>
+                    <Label text="Nenhum vencimento futuro pendente." styleClass="empty-description"/>
+                </VBox>
+            </VBox>
+            <VBox GridPane.columnIndex="1" spacing="13" styleClass="panel">
+                <Label text="Maiores gastos" styleClass="section-title"/>
+                <Label text="Categorias com maior impacto no período." styleClass="section-caption"/>
+                <VBox fx:id="categoryTotals" spacing="11"/>
+                <VBox fx:id="categoryEmpty" alignment="CENTER" spacing="5" styleClass="inline-empty">
+                    <Label text="Sem despesas no período" styleClass="empty-title"/>
+                    <Label text="A distribuição aparecerá quando houver lançamentos." wrapText="true" styleClass="empty-description"/>
+                </VBox>
+            </VBox>
+        </GridPane>
+    </VBox>
+</ScrollPane>

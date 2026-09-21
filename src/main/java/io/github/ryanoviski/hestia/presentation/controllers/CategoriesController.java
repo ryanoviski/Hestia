@@ -21,7 +21,8 @@ import org.slf4j.LoggerFactory;
 public final class CategoriesController {
     private static final Logger LOGGER = LoggerFactory.getLogger(CategoriesController.class);
     @FXML private TextField searchField;
-    @FXML private ComboBox<CategoryType> filterType;
+    @FXML private Button expenseTab;
+    @FXML private Button incomeTab;
     @FXML private CheckBox includeInactive;
     @FXML private VBox categoryList;
     @FXML private Label emptyState;
@@ -34,23 +35,29 @@ public final class CategoriesController {
 
     private CategoryService service;
     private Category editing;
+    private CategoryType selectedType = CategoryType.EXPENSE;
 
     @FXML private void initialize() {
-        ComboBoxSupport.configure(filterType, CategoryType::displayName);
         ComboBoxSupport.configure(typeField, CategoryType::displayName);
-        filterType.getItems().setAll(CategoryType.values());
-        filterType.setPromptText("Todos os tipos");
         typeField.getItems().setAll(CategoryType.values());
         typeField.setValue(CategoryType.EXPENSE);
         searchField.textProperty().addListener((o, oldValue, newValue) -> refresh());
-        filterType.valueProperty().addListener((o, oldValue, newValue) -> refresh());
         includeInactive.selectedProperty().addListener((o, oldValue, newValue) -> refresh());
     }
 
     public void configure(CategoryService service) { this.service = service; refresh(); }
 
-    @FXML private void clearCategoryFilters() {
-        searchField.clear(); filterType.setValue(null); includeInactive.setSelected(false);
+    @FXML private void showExpenses() { selectType(CategoryType.EXPENSE); }
+    @FXML private void showIncome() { selectType(CategoryType.INCOME); }
+
+    private void selectType(CategoryType type) {
+        selectedType = type;
+        if (editing != null && editing.type() != type) cancelEdit();
+        expenseTab.getStyleClass().remove("segment-selected");
+        incomeTab.getStyleClass().remove("segment-selected");
+        (type == CategoryType.EXPENSE ? expenseTab : incomeTab).getStyleClass().add("segment-selected");
+        if (editing == null) typeField.setValue(type);
+        refresh();
     }
 
     @FXML private void saveCategory() {
@@ -75,7 +82,7 @@ public final class CategoriesController {
         nameField.clear();
         colorPalette.setSelectedColor(null);
         typeField.setDisable(false);
-        typeField.setValue(CategoryType.EXPENSE);
+        typeField.setValue(selectedType);
         cancelEditButton.setVisible(false);
         cancelEditButton.setManaged(false);
     }
@@ -95,11 +102,12 @@ public final class CategoriesController {
     private void refresh() {
         if (service == null) return;
         try {
-            var categories = service.search(filterType.getValue(), searchField.getText(), includeInactive.isSelected());
+            var categories = service.search(selectedType, searchField.getText(), includeInactive.isSelected());
             categoryList.getChildren().clear();
             categories.forEach(category -> categoryList.getChildren().add(row(category)));
             emptyState.setVisible(categories.isEmpty());
             emptyState.setManaged(categories.isEmpty());
+            if (categories.isEmpty()) categoryList.getChildren().add(emptyState);
         } catch (RuntimeException exception) {
             LOGGER.error("Could not load categories", exception);
             showMessage("Não foi possível carregar as categorias.", true);
@@ -112,23 +120,22 @@ public final class CategoriesController {
         if (category.color() != null) color.setStyle("-fx-background-color: " + category.color() + ";");
         Label name = new Label(category.name());
         name.getStyleClass().add("profile-name");
-        Label details = new Label(category.type().displayName() + " · "
-                + (category.standard() ? "Padrão" : "Personalizada") + " · "
-                + (category.active() ? "Ativa" : "Inativa"));
+        Label details = new Label((category.active() ? "Ativa" : "Inativa") + " · "
+                + (category.standard() ? "Categoria padrão" : "Criada por você"));
         details.getStyleClass().add("profile-meta");
         VBox identity = new VBox(3, name, details);
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        FlowPane actions = new FlowPane(8, 8);
-        actions.setAlignment(Pos.CENTER_RIGHT);
+        MenuButton actions = new MenuButton("Ações");
+        actions.getStyleClass().add("ghost-button");
         HBox row = new HBox(12, color, identity, spacer, actions);
         row.setAlignment(Pos.CENTER_LEFT);
         row.getStyleClass().add("profile-row");
-        actions.getChildren().add(action("Editar", "secondary-button", () -> edit(category)));
-        actions.getChildren().add(action(category.active()
-                ? (category.standard() ? "Ocultar" : "Desativar") : "Reativar", "secondary-button", () -> toggle(category)));
+        actions.getItems().add(menu("Editar", () -> edit(category)));
+        actions.getItems().add(menu(category.active()
+                ? (category.standard() ? "Ocultar" : "Desativar") : "Reativar", () -> toggle(category)));
         if (!category.standard()) {
-            actions.getChildren().add(action("Excluir", "destructive-button", () -> delete(category)));
+            actions.getItems().add(menu("Excluir", () -> delete(category)));
         }
         return row;
     }
@@ -145,11 +152,10 @@ public final class CategoriesController {
         }
     }
 
-    private Button action(String text, String styleClass, Runnable action) {
-        Button button = new Button(text);
-        button.getStyleClass().add(styleClass);
-        button.setOnAction(event -> action.run());
-        return button;
+    private MenuItem menu(String text, Runnable action) {
+        MenuItem item = new MenuItem(text);
+        item.setOnAction(event -> action.run());
+        return item;
     }
 
     private void delete(Category category) {

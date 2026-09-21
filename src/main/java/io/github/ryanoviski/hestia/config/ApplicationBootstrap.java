@@ -20,6 +20,8 @@ import io.github.ryanoviski.hestia.application.services.AttachmentService;
 import io.github.ryanoviski.hestia.application.services.DocumentPreviewService;
 import io.github.ryanoviski.hestia.application.services.BackupService;
 import io.github.ryanoviski.hestia.application.services.BackupPreferencesService;
+import io.github.ryanoviski.hestia.application.services.ReportService;
+import io.github.ryanoviski.hestia.application.services.ReportPdfService;
 
 import java.time.Clock;
 
@@ -57,7 +59,8 @@ public final class ApplicationBootstrap {
                     recurringService,
                     new InstallmentPlanService(commitmentRepository, profileRepository, categoryRepository, clock),
                     new CalendarService(transactionRepository, profileRepository, recurringService, clock),
-                    attachmentService, new DocumentPreviewService(), backupService, backupPreferences);
+                    attachmentService, new DocumentPreviewService(), backupService, backupPreferences,
+                    new ReportService(transactionRepository, profileRepository, clock), new ReportPdfService());
         } catch (Exception exception) {
             throw new ApplicationInitializationException("Could not initialize Hestia", exception);
         }

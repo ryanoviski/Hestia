@@ -4,30 +4,40 @@
 <?import io.github.ryanoviski.hestia.presentation.components.ColorPalette?>
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="io.github.ryanoviski.hestia.presentation.controllers.CategoriesController"
-      spacing="18" styleClass="view">
-    <VBox spacing="5"><Label text="Categorias financeiras" styleClass="view-heading"/><Label text="Organize receitas e despesas com categorias padrão ou personalizadas." wrapText="true" styleClass="view-subtitle"/></VBox>
-    <FlowPane hgap="20" vgap="20" prefWrapLength="980" VBox.vgrow="ALWAYS">
-      <VBox spacing="14" minWidth="480" prefWidth="620">
-        <FlowPane hgap="10" vgap="10" alignment="CENTER_LEFT" styleClass="filter-bar">
-            <TextField fx:id="searchField" promptText="Pesquisar pelo nome" HBox.hgrow="ALWAYS"/>
-            <ComboBox fx:id="filterType" minWidth="170" prefWidth="190" promptText="Todos os tipos"/>
-            <CheckBox fx:id="includeInactive" text="Mostrar inativas"/>
-            <Button text="Limpar" onAction="#clearCategoryFilters" styleClass="secondary-button"/>
-        </FlowPane>
-        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="profiles-scroll">
-            <VBox fx:id="categoryList" spacing="9" styleClass="profiles-list">
-                <Label fx:id="emptyState" text="Nenhuma categoria corresponde aos filtros escolhidos." styleClass="empty-state" wrapText="true"/>
-            </VBox>
-        </ScrollPane>
-      </VBox>
-      <VBox minWidth="330" prefWidth="350" spacing="12" styleClass="form-card">
-        <Label fx:id="formTitle" text="Nova categoria" styleClass="panel-title"/>
-        <Label text="Nome *" styleClass="field-label"/><TextField fx:id="nameField" promptText="Ex.: Pets"/>
-        <Label text="Tipo *" styleClass="field-label"/><ComboBox fx:id="typeField" maxWidth="Infinity"/>
-        <Label text="Cor" styleClass="field-label"/><ColorPalette fx:id="colorPalette" maxWidth="Infinity"/>
-        <Label fx:id="formMessage" wrapText="true"/>
-        <Button text="Salvar categoria" onAction="#saveCategory" maxWidth="Infinity" styleClass="primary-button"/>
-        <Button fx:id="cancelEditButton" text="Cancelar edição" onAction="#cancelEdit" visible="false" managed="false" maxWidth="Infinity" styleClass="secondary-button"/>
-      </VBox>
+      spacing="18" styleClass="view,content-constrained">
+    <VBox spacing="4">
+        <Label text="Categorias" styleClass="view-heading"/>
+        <Label text="Organize suas movimentações com nomes que façam sentido para sua rotina."
+               wrapText="true" styleClass="view-subtitle"/>
+    </VBox>
+    <HBox spacing="0" styleClass="segmented-control">
+        <Button fx:id="expenseTab" text="Despesas" onAction="#showExpenses" styleClass="segment-button,segment-selected"/>
+        <Button fx:id="incomeTab" text="Receitas" onAction="#showIncome" styleClass="segment-button"/>
+    </HBox>
+    <FlowPane hgap="18" vgap="18" prefWrapLength="920" VBox.vgrow="ALWAYS">
+        <VBox minWidth="430" prefWidth="585" spacing="11">
+            <HBox alignment="CENTER_LEFT" spacing="9" styleClass="search-panel">
+                <TextField fx:id="searchField" promptText="Buscar categoria" HBox.hgrow="ALWAYS"/>
+                <CheckBox fx:id="includeInactive" text="Mostrar inativas"/>
+            </HBox>
+            <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="content-scroll">
+                <VBox fx:id="categoryList" spacing="8" styleClass="financial-list">
+                    <Label fx:id="emptyState" text="Nenhuma categoria encontrada neste grupo."
+                           styleClass="empty-state" wrapText="true"/>
+                </VBox>
+            </ScrollPane>
+        </VBox>
+        <VBox minWidth="310" prefWidth="335" maxWidth="360" spacing="12" styleClass="form-card">
+            <Label fx:id="formTitle" text="Nova categoria" styleClass="section-title"/>
+            <Label text="Nome" styleClass="field-label"/><TextField fx:id="nameField" promptText="Ex.: Pets"/>
+            <Label text="Tipo" styleClass="field-label"/><ComboBox fx:id="typeField" maxWidth="Infinity"/>
+            <Label text="Cor de identificação" styleClass="field-label"/><ColorPalette fx:id="colorPalette" maxWidth="Infinity"/>
+            <Label text="Categorias padrão podem ser personalizadas sem alterar a base do Hestia."
+                   wrapText="true" styleClass="field-hint"/>
+            <Label fx:id="formMessage" wrapText="true"/>
+            <Button text="Salvar categoria" onAction="#saveCategory" maxWidth="Infinity" styleClass="primary-button"/>
+            <Button fx:id="cancelEditButton" text="Cancelar edição" onAction="#cancelEdit"
+                    visible="false" managed="false" maxWidth="Infinity" styleClass="ghost-button"/>
+        </VBox>
     </FlowPane>
 </VBox>

@@ -28,7 +28,7 @@ public final class ProfilesController {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProfilesController.class);
 
     @FXML private VBox profilesList;
-    @FXML private Label emptyState;
+    @FXML private VBox emptyState;
     @FXML private Label formTitle;
     @FXML private Label formMessage;
     @FXML private TextField nameField;
@@ -36,6 +36,8 @@ public final class ProfilesController {
     @FXML private ColorPalette colorPalette;
     @FXML private Button saveButton;
     @FXML private Button cancelEditButton;
+    @FXML private Label typeHelp;
+    @FXML private Label profileCount;
 
     private ProfileService service;
     private ApplicationContext context;
@@ -45,6 +47,8 @@ public final class ProfilesController {
         ComboBoxSupport.configure(typeField, ProfileType::displayName);
         typeField.getItems().setAll(ProfileType.values());
         typeField.setValue(ProfileType.PERSON);
+        typeField.valueProperty().addListener((observable, oldValue, newValue) -> updateTypeHelp(newValue));
+        updateTypeHelp(typeField.getValue());
     }
 
     public void configure(ApplicationContext context) {
@@ -96,10 +100,13 @@ public final class ProfilesController {
     private void refresh() {
         try {
             var profiles = service.listProfiles();
+            long active = profiles.stream().filter(Profile::active).count();
+            profileCount.setText(active + " de " + ProfileService.MAX_ACTIVE_PROFILES + " ativos");
             profilesList.getChildren().clear();
             profiles.forEach(profile -> profilesList.getChildren().add(createRow(profile)));
             emptyState.setVisible(profiles.isEmpty());
             emptyState.setManaged(profiles.isEmpty());
+            if (profiles.isEmpty()) profilesList.getChildren().add(emptyState);
         } catch (RuntimeException exception) {
             LOGGER.error("Could not list profiles", exception);
             showMessage("Não foi possível carregar os perfis.", true);
@@ -114,17 +121,19 @@ public final class ProfilesController {
 
         Label name = new Label(profile.name());
         name.getStyleClass().add("profile-name");
-        Label details = new Label(profile.type().displayName() + " · " + (profile.active() ? "Ativo" : "Inativo"));
+        Label details = new Label(profile.type() == ProfileType.PERSON
+                ? "Pessoa · " + (profile.active() ? "Ativo" : "Inativo")
+                : "Compartilhado · " + (profile.active() ? "Ativo" : "Inativo"));
         details.getStyleClass().add("profile-meta");
         VBox identity = new VBox(3, name, details);
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        FlowPane actions = new FlowPane(8, 8);
-        actions.setAlignment(Pos.CENTER_RIGHT);
-        actions.getChildren().add(action("Editar", "secondary-button", () -> edit(profile)));
-        actions.getChildren().add(action("Anexos", "secondary-button", () -> manageAttachments(profile)));
-        actions.getChildren().add(action(profile.active() ? "Desativar" : "Reativar", "secondary-button", () -> toggle(profile)));
-        actions.getChildren().add(action("Excluir", "destructive-button", () -> delete(profile)));
+        MenuButton actions = new MenuButton("Ações");
+        actions.getStyleClass().add("ghost-button");
+        actions.getItems().add(menu("Editar", () -> edit(profile)));
+        actions.getItems().add(menu("Anexos", () -> manageAttachments(profile)));
+        actions.getItems().add(menu(profile.active() ? "Desativar" : "Reativar", () -> toggle(profile)));
+        actions.getItems().add(menu("Excluir", () -> delete(profile)));
         HBox row = new HBox(14, color, identity, spacer, actions);
         row.setAlignment(Pos.CENTER_LEFT);
         row.getStyleClass().add("profile-row");
@@ -136,6 +145,18 @@ public final class ProfilesController {
         button.getStyleClass().add(styleClass);
         button.setOnAction(event -> action.run());
         return button;
+    }
+
+    private MenuItem menu(String text, Runnable action) {
+        MenuItem item = new MenuItem(text);
+        item.setOnAction(event -> action.run());
+        return item;
+    }
+
+    private void updateTypeHelp(ProfileType type) {
+        typeHelp.setText(type == ProfileType.SHARED
+                ? "Use para despesas e receitas da família, casal ou grupo."
+                : "Use para movimentações relacionadas a uma pessoa.");
     }
 
     private void toggle(Profile profile) {

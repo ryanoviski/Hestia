@@ -4,22 +4,45 @@
 <?import io.github.ryanoviski.hestia.presentation.components.MonthYearPicker?>
 <VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="io.github.ryanoviski.hestia.presentation.controllers.TransactionsController"
-      spacing="15" styleClass="view">
-    <HBox alignment="CENTER_LEFT"><VBox spacing="4" HBox.hgrow="ALWAYS"><Label fx:id="heading" text="Movimentações" styleClass="view-heading"/><Label text="Consulte receitas e despesas e acompanhe cada compromisso." styleClass="view-subtitle"/></VBox><Button text="Nova movimentação" onAction="#newTransaction" styleClass="primary-button"/></HBox>
-    <FlowPane hgap="9" vgap="9" styleClass="filter-bar">
-        <TextField fx:id="searchField" promptText="Pesquisar descrição" minWidth="210" prefWidth="250"/>
-        <MonthYearPicker fx:id="monthPicker" minWidth="190" prefWidth="210"/>
-        <ComboBox fx:id="typeFilter" promptText="Todos os tipos" minWidth="165" prefWidth="185"/>
-        <ComboBox fx:id="statusFilter" promptText="Todas as situações" minWidth="185" prefWidth="205"/>
-        <ComboBox fx:id="profileFilter" promptText="Todos os perfis" minWidth="180" prefWidth="210"/>
-        <ComboBox fx:id="categoryFilter" promptText="Todas as categorias" minWidth="200" prefWidth="230"/>
-        <ComboBox fx:id="originFilter" promptText="Todas as origens" minWidth="175" prefWidth="195"/>
-        <CheckBox fx:id="overdueOnly" text="Somente vencidas"/>
-        <Button text="Filtrar" onAction="#applyFilters" styleClass="primary-button"/>
-        <Button text="Limpar" onAction="#clearFilters" styleClass="secondary-button"/>
-    </FlowPane>
-    <Label fx:id="resultCount" styleClass="profile-meta"/>
-    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="profiles-scroll">
-        <VBox fx:id="transactionList" spacing="8" styleClass="profiles-list"><Label fx:id="emptyState" text="Nenhuma movimentação encontrada. Ajuste os filtros ou cadastre a primeira." wrapText="true" styleClass="empty-state"/></VBox>
+      spacing="16" styleClass="view,content-constrained">
+    <HBox alignment="CENTER_LEFT" spacing="12">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label fx:id="heading" text="Movimentações" styleClass="view-heading"/>
+            <Label fx:id="subtitle" text="Seu histórico financeiro em um só lugar." styleClass="view-subtitle"/>
+        </VBox>
+        <Button fx:id="recurringManagerButton" text="Recorrências" onAction="#manageRecurring"
+                visible="false" managed="false" styleClass="ghost-button"/>
+        <Button fx:id="installmentManagerButton" text="Parcelamentos" onAction="#manageInstallments"
+                visible="false" managed="false" styleClass="ghost-button"/>
+        <Button fx:id="newButton" text="Nova movimentação" onAction="#newTransaction" styleClass="primary-button"/>
+    </HBox>
+
+    <VBox spacing="10" styleClass="search-panel">
+        <HBox alignment="CENTER_LEFT" spacing="9">
+            <TextField fx:id="searchField" promptText="Buscar por descrição" HBox.hgrow="ALWAYS"/>
+            <MonthYearPicker fx:id="monthPicker" minWidth="190" maxWidth="210"/>
+            <Button fx:id="filterToggle" text="Filtros" onAction="#toggleFilters" styleClass="secondary-button"/>
+        </HBox>
+        <FlowPane fx:id="advancedFilters" hgap="9" vgap="9" visible="false" managed="false" styleClass="advanced-filters">
+            <ComboBox fx:id="typeFilter" promptText="Todos os tipos" minWidth="155" prefWidth="175"/>
+            <ComboBox fx:id="statusFilter" promptText="Todas as situações" minWidth="175" prefWidth="195"/>
+            <ComboBox fx:id="profileFilter" promptText="Todos os perfis" minWidth="170" prefWidth="195"/>
+            <ComboBox fx:id="categoryFilter" promptText="Todas as categorias" minWidth="190" prefWidth="215"/>
+            <ComboBox fx:id="originFilter" promptText="Todas as origens" minWidth="165" prefWidth="185"/>
+            <CheckBox fx:id="overdueOnly" text="Somente vencidas"/>
+            <Button text="Aplicar" onAction="#applyFilters" styleClass="primary-button,compact-button"/>
+            <Button text="Limpar" onAction="#clearFilters" styleClass="ghost-button,compact-button"/>
+        </FlowPane>
+    </VBox>
+
+    <HBox alignment="CENTER_LEFT"><Label fx:id="resultCount" styleClass="result-count"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="feedback" styleClass="feedback-text"/></HBox>
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="content-scroll">
+        <VBox fx:id="transactionList" spacing="7" styleClass="financial-list">
+            <VBox fx:id="emptyState" alignment="CENTER" spacing="8" styleClass="empty-state-large">
+                <Label fx:id="emptyTitle" text="Nenhuma movimentação encontrada" styleClass="empty-title"/>
+                <Label fx:id="emptyDescription" text="Ajuste os filtros ou registre a primeira movimentação." wrapText="true" styleClass="empty-description"/>
+                <Button fx:id="emptyAction" text="Registrar movimentação" onAction="#newTransaction" styleClass="secondary-button"/>
+            </VBox>
+        </VBox>
     </ScrollPane>
 </VBox>

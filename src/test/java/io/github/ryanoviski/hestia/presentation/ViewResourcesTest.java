@@ -19,7 +19,10 @@ class ViewResourcesTest {
             assertThat(fxml)
                     .doesNotContain("userData=\"calendar\"")
                     .doesNotContain("userData=\"documents\"")
-                    .doesNotContain("userData=\"budgets\"");
+                    .doesNotContain("userData=\"budgets\"")
+                    .doesNotContain("userData=\"recurring\"")
+                    .doesNotContain("userData=\"installments\"")
+                    .contains("userData=\"reports\"");
         }
     }
 
@@ -31,6 +34,7 @@ class ViewResourcesTest {
             "/fxml/recurring-expenses-view.fxml", "/fxml/installment-plans-view.fxml",
             "/fxml/calendar-view.fxml", "/db/migrations/V003__create_financial_commitments.sql",
             "/fxml/documents-view.fxml", "/fxml/settings-view.fxml",
+            "/fxml/reports-view.fxml",
             "/db/migrations/V004__create_attachments.sql",
             "/db/migrations/V005__create_category_preferences.sql",
             "/styles/main.css"
@@ -61,9 +65,11 @@ class ViewResourcesTest {
         }
         try (var stream = ViewResourcesTest.class.getResourceAsStream("/fxml/transactions-view.fxml")) {
             String fxml = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-            assertThat(fxml).contains("promptText=\"Todas as situações\" minWidth=\"185\"")
-                    .contains("promptText=\"Todas as categorias\" minWidth=\"200\"")
-                    .contains("promptText=\"Todas as origens\" minWidth=\"175\"");
+            assertThat(fxml).contains("fx:id=\"advancedFilters\"")
+                    .contains("visible=\"false\" managed=\"false\"")
+                    .contains("promptText=\"Todas as situações\"")
+                    .contains("promptText=\"Todas as categorias\"")
+                    .contains("promptText=\"Todas as origens\"");
         }
     }
 }

@@ -38,8 +38,7 @@ public final class MainController {
             case "transactions" -> showTransactions(null, false);
             case "income" -> showTransactions(TransactionType.INCOME, false);
             case "bills" -> showTransactions(TransactionType.EXPENSE, true);
-            case "recurring" -> showRecurring();
-            case "installments" -> showInstallments();
+            case "reports" -> showReports();
             case "settings" -> showSettings();
             default -> showPlaceholder(button.getText().trim());
         }
@@ -74,8 +73,7 @@ public final class MainController {
         });
     }
 
-    private void showRecurring() { loadContent("/fxml/recurring-expenses-view.fxml", loader -> ((RecurringExpensesController)loader.getController()).configure(context)); }
-    private void showInstallments() { loadContent("/fxml/installment-plans-view.fxml", loader -> ((InstallmentPlansController)loader.getController()).configure(context)); }
+    private void showReports() { loadContent("/fxml/reports-view.fxml", loader -> ((ReportsController)loader.getController()).configure(context)); }
     private void showSettings() { loadContent("/fxml/settings-view.fxml", loader -> ((SettingsController)loader.getController()).configure(context)); }
 
     private void showPlaceholder(String title) {

@@ -35,7 +35,7 @@ A situação persistida é uma das seguintes:
 
 “Vencida” não é uma situação persistida. É calculada quando uma despesa está pendente e seu vencimento é anterior à data atual. Serviços recebem `Clock`, permitindo testes determinísticos.
 
-Cancelamentos são alterações de situação, nunca exclusões físicas. Perfis e categorias inativos permanecem associados ao histórico, mas não podem ser escolhidos em novos registros. Categorias padrão são globais e somente leitura; categorias personalizadas pertencem ao grupo atual.
+Cancelamentos são alterações de situação, nunca exclusões físicas. Perfis e categorias inativos permanecem associados ao histórico, mas não podem ser escolhidos em novos registros. Categorias padrão permanecem globais no banco, mas `category_preferences` permite personalizar nome, cor e visibilidade por grupo sem alterar a linha original; categorias personalizadas pertencem ao grupo atual.
 
 ## Persistência e migrações
 
@@ -68,6 +68,19 @@ com os vínculos para apresentar `Manual`, `Recorrente` ou `Parcela N de M`.
 
 Vencimentos mensais são sempre calculados a partir do dia do primeiro vencimento e do `YearMonth` de
 destino. Se o dia não existir, usa-se o último dia daquele mês; o ajuste de fevereiro não se propaga.
+
+Na apresentação, recorrências e parcelamentos não são módulos principais. O fluxo **Nova conta** escolhe
+entre conta única, recorrente e parcelada e delega a operação ao serviço correspondente. O gerenciamento
+das regras e planos continua contextual em Contas a pagar, sem misturar essa composição visual com a
+regra financeira.
+
+## Relatórios
+
+`ReportService` combina as agregações mensais já fornecidas por `TransactionRepository.summarize` com
+as movimentações do período para agrupar despesas por perfil. O DTO `MonthlyReport` contém o período
+atual e o anterior, permitindo calcular comparações fora do controller. `ReportPdfService` recebe esse
+DTO e produz um documento PDF estruturado com PDFBox; ele não conhece JavaFX e pode ser testado sem UI.
+Relatórios são somente leitura e não exigem tabela ou migração adicional.
 
 ## Anexos e integridade
 

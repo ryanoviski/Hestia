@@ -11,6 +11,8 @@ import io.github.ryanoviski.hestia.application.services.AttachmentService;
 import io.github.ryanoviski.hestia.application.services.DocumentPreviewService;
 import io.github.ryanoviski.hestia.application.services.BackupService;
 import io.github.ryanoviski.hestia.application.services.BackupPreferencesService;
+import io.github.ryanoviski.hestia.application.services.ReportService;
+import io.github.ryanoviski.hestia.application.services.ReportPdfService;
 
 public record ApplicationContext(ProfileService profileService, CategoryService categoryService,
                                  TransactionService transactionService, DashboardService dashboardService,
@@ -18,5 +20,6 @@ public record ApplicationContext(ProfileService profileService, CategoryService 
                                  InstallmentPlanService installmentPlanService,
                                  CalendarService calendarService, AttachmentService attachmentService,
                                  DocumentPreviewService documentPreviewService, BackupService backupService,
-                                 BackupPreferencesService backupPreferencesService) {
+                                 BackupPreferencesService backupPreferencesService,
+                                 ReportService reportService, ReportPdfService reportPdfService) {
 }

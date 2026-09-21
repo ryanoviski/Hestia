@@ -2,12 +2,14 @@ package io.github.ryanoviski.hestia.presentation.controllers;
 
 import io.github.ryanoviski.hestia.application.services.BackupPreferencesService;
 import io.github.ryanoviski.hestia.config.ApplicationContext;
+import io.github.ryanoviski.hestia.config.ApplicationPaths;
 import io.github.ryanoviski.hestia.presentation.components.ThemeManager;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.stage.DirectoryChooser;
 
 import java.io.File;
 import java.util.Arrays;
@@ -18,6 +20,7 @@ public final class SettingsController {
     @FXML private Spinner<Integer> retention;
     @FXML private Label status;
     @FXML private ProgressIndicator progress;
+    @FXML private Label localDataPath;
     private ApplicationContext context;
 
     public void configure(ApplicationContext context) {
@@ -28,6 +31,18 @@ public final class SettingsController {
         automaticDirectory.setText(settings.directory());
         retention.getValueFactory().setValue(settings.retention());
         status.setText("Último backup: " + (settings.lastBackup() == null ? "nunca" : settings.lastBackup()) + " · " + settings.lastResult());
+        localDataPath.setText(ApplicationPaths.resolve().root().toString());
+    }
+
+    @FXML private void chooseDirectory() {
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setTitle("Escolher pasta para backups automáticos");
+        if (!automaticDirectory.getText().isBlank()) {
+            File current = new File(automaticDirectory.getText());
+            if (current.isDirectory()) chooser.setInitialDirectory(current);
+        }
+        File selected = chooser.showDialog(status.getScene().getWindow());
+        if (selected != null) automaticDirectory.setText(selected.getAbsolutePath());
     }
 
     @FXML private void createBackup() {

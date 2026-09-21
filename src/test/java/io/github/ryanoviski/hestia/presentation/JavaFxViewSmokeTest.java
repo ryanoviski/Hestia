@@ -46,7 +46,7 @@ class JavaFxViewSmokeTest {
     @ValueSource(strings = {"main-view.fxml", "dashboard-view.fxml", "profiles-view.fxml",
             "categories-view.fxml", "transactions-view.fxml", "placeholder-view.fxml",
             "recurring-expenses-view.fxml", "installment-plans-view.fxml", "calendar-view.fxml",
-            "documents-view.fxml", "settings-view.fxml"})
+            "documents-view.fxml", "settings-view.fxml", "reports-view.fxml"})
     void loadsViewWithItsController(String resource) throws Exception {
         CompletableFuture<Parent> loaded = new CompletableFuture<>();
         Platform.runLater(() -> {
@@ -106,14 +106,14 @@ class JavaFxViewSmokeTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"1280,720", "1366,768", "1440,900", "1920,1080"})
+    @CsvSource({"980,640", "1200,760", "1366,768", "1920,1080"})
     void criticalViewsLayoutAtDesktopResolutions(double width, double height) throws Exception {
         CompletableFuture<Void> checked = new CompletableFuture<>();
         Platform.runLater(() -> {
             try {
                 for (String resource : new String[]{"dashboard-view.fxml", "transactions-view.fxml",
                         "profiles-view.fxml", "categories-view.fxml", "recurring-expenses-view.fxml",
-                        "installment-plans-view.fxml", "settings-view.fxml"}) {
+                        "installment-plans-view.fxml", "settings-view.fxml", "reports-view.fxml"}) {
                     Parent root = new FXMLLoader(getClass().getResource("/fxml/" + resource)).load();
                     Scene scene = new Scene(root, width, height);
                     ThemeManager.apply(scene);

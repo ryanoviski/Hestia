@@ -49,4 +49,20 @@ public final class InstallmentPlanService {
     public List<InstallmentPlan> list(){return repository.findInstallmentPlans(profiles.findDefaultHouseholdId());}
     public List<Installment> installments(long planId){return repository.findInstallments(profiles.findDefaultHouseholdId(),planId);}
     public void cancelRemaining(long planId){repository.cancelRemainingInstallments(profiles.findDefaultHouseholdId(),planId,LocalDate.now(clock));}
+
+    public List<GeneratedExpense> preview(String description, java.math.BigDecimal totalAmount,
+                                          int installmentCount, LocalDate firstDueDate) {
+        if (firstDueDate == null) throw new ValidationException("Informe o primeiro vencimento.");
+        String normalizedDescription = description == null || description.isBlank()
+                ? "Compra parcelada" : description.trim();
+        List<Long> values = distribution.distribute(MoneyUtils.toCents(totalAmount), installmentCount);
+        List<GeneratedExpense> generated = new ArrayList<>();
+        for (int index = 0; index < values.size(); index++) {
+            YearMonth month = YearMonth.from(firstDueDate).plusMonths(index);
+            LocalDate dueDate = MonthlyDueDateCalculator.forMonth(firstDueDate, month);
+            generated.add(new GeneratedExpense(month, index + 1, values.get(index), dueDate,
+                    normalizedDescription + " — parcela " + (index + 1) + " de " + values.size(), null));
+        }
+        return List.copyOf(generated);
+    }
 }

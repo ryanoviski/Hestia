@@ -1,19 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.control.*?><?import javafx.scene.layout.*?>
-<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="io.github.ryanoviski.hestia.presentation.controllers.SettingsController" spacing="16" styleClass="view">
- <Label text="Configurações" styleClass="view-heading"/>
- <VBox spacing="12" styleClass="panel">
-  <Label text="Backup e restauração" styleClass="panel-title"/>
-  <Label text="O backup inclui uma cópia verificada do banco e dos anexos. Logs e arquivos temporários não são incluídos." wrapText="true" styleClass="view-subtitle"/>
-  <FlowPane hgap="8" vgap="8"><Button text="Criar backup" onAction="#createBackup" styleClass="primary-button"/><Button text="Restaurar backup" onAction="#restoreBackup" styleClass="secondary-button"/><ProgressIndicator fx:id="progress" visible="false" managed="false" prefWidth="28" prefHeight="28"/></FlowPane>
-  <Separator/>
-  <Label text="Backup automático" styleClass="panel-title"/>
-  <CheckBox fx:id="automaticEnabled" text="Ativar backup automático diário sem senha"/>
-  <Label text="Pasta de destino *" styleClass="field-label"/>
-  <TextField fx:id="automaticDirectory" promptText="Diretório dos backups automáticos" maxWidth="640"/>
-  <Label text="Quantidade de backups a manter *" styleClass="field-label"/>
-  <Spinner fx:id="retention" maxWidth="180"/>
-  <Button text="Salvar configuração automática" onAction="#saveAutomatic" styleClass="secondary-button"/>
-  <Label fx:id="status" wrapText="true" styleClass="profile-meta"/>
- </VBox>
-</VBox>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="io.github.ryanoviski.hestia.presentation.controllers.SettingsController"
+            fitToWidth="true" styleClass="view-scroll">
+    <VBox spacing="20" styleClass="view,content-narrow">
+        <VBox spacing="4"><Label text="Configurações" styleClass="view-heading"/><Label text="Proteja seus dados e escolha como o Hestia cria cópias de segurança." styleClass="view-subtitle"/></VBox>
+        <VBox spacing="14" styleClass="settings-section">
+            <VBox spacing="3"><Label text="Dados e segurança" styleClass="section-title"/><Label text="O backup inclui o banco e todos os anexos verificados." styleClass="section-caption"/></VBox>
+            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="settings-row">
+                <VBox spacing="3" HBox.hgrow="ALWAYS"><Label text="Criar backup" styleClass="setting-title"/><Label text="Salve uma cópia completa, com senha opcional." styleClass="section-caption"/></VBox>
+                <Button text="Criar backup" onAction="#createBackup" styleClass="primary-button"/>
+            </HBox>
+            <HBox alignment="CENTER_LEFT" spacing="12" styleClass="settings-row">
+                <VBox spacing="3" HBox.hgrow="ALWAYS"><Label text="Restaurar dados" styleClass="setting-title"/><Label text="Valide e restaure um arquivo .hestia-backup." styleClass="section-caption"/></VBox>
+                <Button text="Restaurar backup" onAction="#restoreBackup" styleClass="secondary-button"/>
+            </HBox>
+        </VBox>
+        <VBox spacing="13" styleClass="settings-section">
+            <VBox spacing="3"><Label text="Backup automático" styleClass="section-title"/><Label text="Uma cópia diária no local escolhido, sem senha." styleClass="section-caption"/></VBox>
+            <CheckBox fx:id="automaticEnabled" text="Fazer backup automaticamente"/>
+            <Label text="Pasta de destino" styleClass="field-label"/>
+            <HBox spacing="8"><TextField fx:id="automaticDirectory" promptText="Escolha uma pasta" HBox.hgrow="ALWAYS"/><Button text="Escolher pasta" onAction="#chooseDirectory" styleClass="secondary-button"/></HBox>
+            <Label text="Quantidade de cópias mantidas" styleClass="field-label"/>
+            <Spinner fx:id="retention" maxWidth="150"/>
+            <Button text="Salvar backup automático" onAction="#saveAutomatic" maxWidth="230" styleClass="secondary-button"/>
+        </VBox>
+        <VBox spacing="9" styleClass="settings-section">
+            <Label text="Sobre os dados" styleClass="section-title"/>
+            <Label text="Local utilizado pelo Hestia neste computador" styleClass="section-caption"/>
+            <Label fx:id="localDataPath" wrapText="true" styleClass="data-path"/>
+            <Label text="Seus dados não são enviados para serviços externos." styleClass="info-text"/>
+        </VBox>
+        <HBox alignment="CENTER_LEFT" spacing="10"><ProgressIndicator fx:id="progress" visible="false" managed="false" prefWidth="24" prefHeight="24"/><Label fx:id="status" wrapText="true" styleClass="feedback-text"/></HBox>
+    </VBox>
+</ScrollPane>

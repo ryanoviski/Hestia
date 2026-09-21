@@ -59,16 +59,16 @@ Na primeira abertura, o Hestia cria automaticamente seus diretórios, banco e ca
 
 Antes de cadastrar uma movimentação, crie ao menos um perfil em **Perfis**. Categorias padrão já estão disponíveis; categorias próprias podem ser criadas em **Categorias**, escolhendo o tipo Receita ou Despesa.
 
-Para cadastrar uma receita, abra **Receitas**, selecione **Nova movimentação** e informe descrição, valor, perfil, categoria e data de referência. Receitas podem permanecer previstas ou ser marcadas como recebidas.
+Para cadastrar uma receita, abra **Receitas**, selecione **Nova receita** e informe descrição, valor, perfil, categoria e data de referência. Receitas podem permanecer previstas ou ser marcadas como recebidas.
 
-Para cadastrar uma despesa, use **Movimentações** ou **Contas a pagar**. Despesas pendentes com vencimento anterior à data atual aparecem como vencidas. Elas podem ser marcadas como pagas e posteriormente reabertas. O cancelamento exige confirmação e preserva o registro no histórico.
+Para cadastrar uma despesa, use **Movimentações** ou **Contas a pagar**. Em **Nova conta**, escolha naturalmente entre **Única**, **Recorrente** ou **Parcelada**; o formulário mostra somente os campos compatíveis. Despesas pendentes com vencimento anterior à data atual aparecem como vencidas. Elas podem ser marcadas como pagas e posteriormente reabertas. O cancelamento exige confirmação e preserva o registro no histórico.
 
-As listas aceitam pesquisa e filtros por mês, tipo, situação, perfil e categoria. **Contas a pagar** também oferece o filtro “Somente vencidas”.
+As listas aceitam pesquisa e filtros por mês, tipo, situação, perfil e categoria. Os filtros avançados ficam recolhidos até serem necessários. **Contas a pagar** também oferece o filtro “Somente vencidas”.
 Movimentações e contas a pagar também podem ser filtradas por origem: manual, recorrente ou parcelada.
 
 ## Recorrências e parcelamentos
 
-Em **Recorrências**, uma regra mensal define descrição, valor previsto, responsável, categoria e
+Ao selecionar **Recorrente** em **Nova conta**, uma regra mensal define descrição, valor previsto, responsável, categoria e
 primeiro vencimento. A aplicação garante ocorrências do mês atual até 12 meses à frente e amplia o
 horizonte automaticamente nas inicializações futuras. A geração pode ser repetida com segurança: há
 uma única ocorrência por regra e competência. Dias 29, 30 ou 31 são ajustados ao último dia do
@@ -79,7 +79,7 @@ Editar a regra atualiza apenas ocorrências futuras, pendentes e ainda não pers
 uma regra, o comportamento padrão é apenas interromper novas gerações; opcionalmente, podem ser
 canceladas as ocorrências futuras pendentes e não personalizadas.
 
-Em **Parcelamentos**, informe o valor total e de 1 a 120 parcelas. Todas são criadas como despesas
+Ao selecionar **Parcelada**, informe o valor total e de 1 a 120 parcelas. A interface apresenta uma prévia calculada pelas mesmas regras usadas na criação. Todas são criadas como despesas
 reais e independentes de cartões ou contas. Centavos indivisíveis são distribuídos de forma determinística
 nas primeiras parcelas: R$ 100,00 em três resulta em R$ 33,34, R$ 33,33 e R$ 33,33. A ação
 **Cancelar parcelas restantes** preserva parcelas pagas e todo o histórico.
@@ -87,12 +87,21 @@ nas primeiras parcelas: R$ 100,00 em três resulta em R$ 33,34, R$ 33,33 e R$ 33
 Recorrências e planos não são somados diretamente. Painel e contas a pagar usam somente
 as movimentações geradas, evitando dupla contagem.
 
+Recorrências e parcelamentos não ocupam opções principais da barra lateral. O gerenciamento específico
+continua disponível de forma contextual em **Contas a pagar** e na origem de cada movimentação gerada.
+
 No painel:
 
 - **resultado realizado** = receitas recebidas − despesas pagas;
 - **resultado projetado** = receitas não canceladas − despesas não canceladas.
 
 Ambos usam o mês da data de referência. Uma despesa “vencida” continua armazenada como pendente; a condição é calculada diariamente a partir do vencimento.
+
+## Relatórios
+
+**Relatórios** apresenta o resumo do mês, situação de receitas e despesas, distribuição de gastos por
+categoria e perfil e comparação com o mês anterior. O período pode ser exportado como um PDF estruturado,
+com data de geração e os mesmos cálculos usados pelo painel. A exportação não é uma captura de tela.
 
 ## Testar e compilar
 
@@ -174,10 +183,10 @@ Consulte [docs/architecture.md](docs/architecture.md) para as decisões e conven
 
 ## Limitações atuais e próxima etapa
 
-Ainda não há OCR, importação automática de documentos, relatórios completos, autenticação,
+Ainda não há OCR, importação automática de documentos, autenticação,
 sincronização, compartilhamento ou notificações do sistema. As recorrências desta versão são exclusivamente
-mensais e de despesas; parcelamentos também são somente de despesas. A próxima etapa recomendada é
-consolidar relatórios mensais e melhorar a visão de próximos compromissos no painel.
+mensais e de despesas; parcelamentos também são somente de despesas. Relatórios possuem um primeiro
+recorte mensal, mas ainda não oferecem séries históricas anuais ou formatos adicionais de exportação.
 
 ## Licença
 
