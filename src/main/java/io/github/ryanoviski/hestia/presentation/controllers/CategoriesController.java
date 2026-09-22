@@ -6,11 +6,10 @@ import io.github.ryanoviski.hestia.domain.exceptions.ValidationException;
 import io.github.ryanoviski.hestia.domain.models.Category;
 import io.github.ryanoviski.hestia.presentation.components.ColorPalette;
 import io.github.ryanoviski.hestia.presentation.components.ComboBoxSupport;
-import io.github.ryanoviski.hestia.presentation.components.ThemeManager;
+import io.github.ryanoviski.hestia.presentation.components.DialogSupport;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
-import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -41,6 +40,7 @@ public final class CategoriesController {
         ComboBoxSupport.configure(typeField, CategoryType::displayName);
         typeField.getItems().setAll(CategoryType.values());
         typeField.setValue(CategoryType.EXPENSE);
+        nameField.textProperty().addListener((observable, oldValue, newValue) -> nameField.getStyleClass().remove("field-invalid"));
         searchField.textProperty().addListener((o, oldValue, newValue) -> refresh());
         includeInactive.selectedProperty().addListener((o, oldValue, newValue) -> refresh());
     }
@@ -69,6 +69,10 @@ public final class CategoriesController {
             showMessage(creating ? "Categoria criada com sucesso." : "Categoria atualizada com sucesso.", false);
             refresh();
         } catch (ValidationException exception) {
+            if (nameField.getText() == null || nameField.getText().isBlank()) {
+                if (!nameField.getStyleClass().contains("field-invalid")) nameField.getStyleClass().add("field-invalid");
+                nameField.requestFocus();
+            }
             showMessage(exception.getMessage(), true);
         } catch (RuntimeException exception) {
             LOGGER.error("Could not save category", exception);
@@ -80,6 +84,7 @@ public final class CategoriesController {
         editing = null;
         formTitle.setText("Nova categoria");
         nameField.clear();
+        nameField.getStyleClass().remove("field-invalid");
         colorPalette.setSelectedColor(null);
         typeField.setDisable(false);
         typeField.setValue(selectedType);
@@ -159,13 +164,9 @@ public final class CategoriesController {
     }
 
     private void delete(Category category) {
-        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION,
-                "Excluir a categoria \"" + category.name() + "\"? Esta ação só será permitida se ela nunca tiver sido usada.",
-                ButtonType.CANCEL, ButtonType.OK);
-        confirmation.setTitle("Excluir categoria");
-        confirmation.setHeaderText("Confirme a exclusão permanente");
-        ThemeManager.apply(confirmation);
-        if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
+        if (!DialogSupport.confirm(categoryList, "Excluir categoria", "Excluir “" + category.name() + "”?",
+                "A exclusão só será permitida quando a categoria nunca tiver sido usada.",
+                "Excluir categoria", true)) return;
         try {
             service.delete(category.id());
             if (editing != null && editing.id().equals(category.id())) cancelEdit();

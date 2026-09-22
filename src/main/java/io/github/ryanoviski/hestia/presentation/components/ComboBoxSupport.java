@@ -3,7 +3,10 @@ package io.github.ryanoviski.hestia.presentation.components;
 import io.github.ryanoviski.hestia.domain.models.Category;
 import io.github.ryanoviski.hestia.domain.models.Profile;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.util.StringConverter;
 
 import java.util.function.Function;
@@ -13,11 +16,11 @@ public final class ComboBoxSupport {
     }
 
     public static void profiles(ComboBox<Profile> comboBox) {
-        configure(comboBox, ComboBoxSupport::profileLabel);
+        configureColored(comboBox, ComboBoxSupport::profileLabel, Profile::color);
     }
 
     public static void categories(ComboBox<Category> comboBox) {
-        configure(comboBox, ComboBoxSupport::categoryLabel);
+        configureColored(comboBox, ComboBoxSupport::categoryLabel, Category::color);
     }
 
     public static <T> void configure(ComboBox<T> comboBox, Function<T, String> labelProvider) {
@@ -56,6 +59,38 @@ public final class ComboBoxSupport {
             protected void updateItem(T item, boolean empty) {
                 super.updateItem(item, empty);
                 setText(empty || item == null ? null : converter.toString(item));
+            }
+        };
+    }
+
+    private static <T> void configureColored(ComboBox<T> comboBox, Function<T, String> labelProvider,
+                                             Function<T, String> colorProvider) {
+        StringConverter<T> converter = converter(labelProvider);
+        comboBox.setConverter(converter);
+        comboBox.setCellFactory(list -> coloredCell(converter, colorProvider));
+        comboBox.setButtonCell(coloredCell(converter, colorProvider));
+        comboBox.setVisibleRowCount(10);
+    }
+
+    private static <T> ListCell<T> coloredCell(StringConverter<T> converter, Function<T, String> colorProvider) {
+        return new ListCell<>() {
+            @Override
+            protected void updateItem(T item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(null);
+                if (empty || item == null) {
+                    setGraphic(null);
+                    return;
+                }
+                Region color = new Region();
+                color.getStyleClass().add("combo-color-dot");
+                String value = colorProvider.apply(item);
+                if (value != null && value.matches("#[0-9a-fA-F]{6}")) {
+                    color.setStyle("-fx-background-color: " + value + ";");
+                }
+                Label label = new Label(converter.toString(item));
+                label.getStyleClass().add("combo-item-label");
+                setGraphic(new HBox(8, color, label));
             }
         };
     }

@@ -2,9 +2,10 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import io.github.ryanoviski.hestia.presentation.components.MonthYearPicker?>
-<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="io.github.ryanoviski.hestia.presentation.controllers.TransactionsController"
-      spacing="16" styleClass="view,content-constrained">
+<StackPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="io.github.ryanoviski.hestia.presentation.controllers.TransactionsController"
+           alignment="TOP_CENTER" minWidth="0" minHeight="0" styleClass="page-shell">
+<VBox fx:id="pageContent" minWidth="0" minHeight="0" spacing="16" styleClass="view,page-frame">
     <HBox alignment="CENTER_LEFT" spacing="12">
         <VBox spacing="4" HBox.hgrow="ALWAYS">
             <Label fx:id="heading" text="Movimentações" styleClass="view-heading"/>
@@ -36,7 +37,7 @@
     </VBox>
 
     <HBox alignment="CENTER_LEFT"><Label fx:id="resultCount" styleClass="result-count"/><Region HBox.hgrow="ALWAYS"/><Label fx:id="feedback" styleClass="feedback-text"/></HBox>
-    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="content-scroll">
+    <ScrollPane minHeight="0" fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS" styleClass="content-scroll">
         <VBox fx:id="transactionList" spacing="7" styleClass="financial-list">
             <VBox fx:id="emptyState" alignment="CENTER" spacing="8" styleClass="empty-state-large">
                 <Label fx:id="emptyTitle" text="Nenhuma movimentação encontrada" styleClass="empty-title"/>
@@ -46,3 +47,4 @@
         </VBox>
     </ScrollPane>
 </VBox>
+</StackPane>

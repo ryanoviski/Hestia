@@ -16,19 +16,18 @@ import io.github.ryanoviski.hestia.domain.models.Category;
 import io.github.ryanoviski.hestia.domain.models.Profile;
 import io.github.ryanoviski.hestia.domain.models.Transaction;
 import io.github.ryanoviski.hestia.presentation.components.ComboBoxSupport;
+import io.github.ryanoviski.hestia.presentation.components.DatePickerSupport;
+import io.github.ryanoviski.hestia.presentation.components.DialogSupport;
 import io.github.ryanoviski.hestia.presentation.components.MonthYearPicker;
-import io.github.ryanoviski.hestia.presentation.components.ThemeManager;
 import io.github.ryanoviski.hestia.util.MoneyUtils;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
-import javafx.stage.Modality;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -216,17 +215,17 @@ public final class TransactionsController {
 
     private void showAccountForm() {
         Dialog<Void> dialog = new Dialog<>();
-        dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.setTitle("Nova conta");
-        dialog.setHeaderText("Registre o compromisso da forma como ele acontece");
-        ButtonType saveType = new ButtonType("Registrar conta", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(saveType, ButtonType.CANCEL);
+        dialog.setHeaderText("Nova conta a pagar");
+        ButtonType saveType = DialogSupport.primaryAction("Registrar conta");
+        ButtonType cancelType = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(cancelType, saveType);
 
         TextField description = new TextField(); description.setPromptText("Ex.: Internet");
-        TextField amount = new TextField(); amount.setPromptText("0,00");
+        TextField amount = new TextField(); amount.setPromptText("R$ 0,00"); amount.getStyleClass().add("money-field");
         ComboBox<Category> category = expenseCategories();
         ComboBox<Profile> profile = activeProfiles();
-        DatePicker due = new DatePicker(LocalDate.now());
+        DatePicker due = DatePickerSupport.configure(new DatePicker(LocalDate.now()));
         TextArea notes = new TextArea(); notes.setPrefRowCount(2); notes.setWrapText(true);
 
         ToggleGroup kindGroup = new ToggleGroup();
@@ -238,32 +237,34 @@ public final class TransactionsController {
         kindSelector.getStyleClass().add("segmented-control");
 
         CheckBox noEnd = new CheckBox("Sem data final"); noEnd.setSelected(true);
-        DatePicker endDate = new DatePicker(); endDate.disableProperty().bind(noEnd.selectedProperty());
-        VBox recurringOptions = new VBox(9,
-                new Label("A conta será gerada mensalmente. O dia do vencimento será mantido sempre que possível."),
-                new Label("Término"), new HBox(10, noEnd, endDate));
+        DatePicker endDate = DatePickerSupport.configure(new DatePicker());
+        endDate.disableProperty().bind(noEnd.selectedProperty());
+        VBox recurringOptions = DialogSupport.section("Repetição mensal",
+                "O vencimento será repetido mensalmente, respeitando os dias disponíveis em cada mês.",
+                DialogSupport.columns(DialogSupport.field("Término", endDate, false), noEnd));
         recurringOptions.getStyleClass().add("conditional-panel");
         recurringOptions.setVisible(false); recurringOptions.setManaged(false);
 
         Spinner<Integer> count = new Spinner<>(1, 120, 2); count.setEditable(true); count.setMaxWidth(130);
         VBox preview = new VBox(4); preview.getStyleClass().add("installment-preview");
-        VBox installmentOptions = new VBox(9, new Label("Quantidade de parcelas"), count,
-                new Label("Prévia das primeiras parcelas"), preview);
+        VBox installmentOptions = DialogSupport.section("Resumo do parcelamento",
+                "O Hestia distribui o total em centavos exatos usando as regras atuais do serviço.",
+                DialogSupport.field("Quantidade de parcelas", count, true), preview);
         installmentOptions.getStyleClass().add("conditional-panel");
         installmentOptions.setVisible(false); installmentOptions.setManaged(false);
 
         Label error = new Label(); error.setWrapText(true); error.getStyleClass().add("form-error");
-        GridPane fields = formGrid();
-        int row = 0;
-        add(fields, row++, "Descrição", description, true);
-        add(fields, row++, "Valor", amount, true);
-        add(fields, row++, "Categoria", category, true);
-        add(fields, row++, "Perfil", profile, true);
-        add(fields, row++, "Vencimento", due, true);
-        add(fields, row++, "Observações", notes, false);
-        VBox content = new VBox(14, fields, new Separator(), new Label("Tipo da conta"), kindSelector,
-                recurringOptions, installmentOptions, error);
-        content.getStyleClass().add("dialog-form");
+        VBox typeSection = DialogSupport.section("Tipo da conta",
+                "Escolha somente as opções necessárias para este compromisso.", kindSelector);
+        VBox fields = DialogSupport.section("Informações da conta", null,
+                DialogSupport.field("Descrição", description, true),
+                DialogSupport.columns(DialogSupport.field("Valor", amount, true),
+                        DialogSupport.field("Primeiro vencimento", due, true)),
+                DialogSupport.columns(DialogSupport.field("Perfil", profile, true),
+                        DialogSupport.field("Categoria", category, true)),
+                DialogSupport.field("Observações", notes, false));
+        VBox content = DialogSupport.content("Registre uma conta única, recorrente ou parcelada no mesmo fluxo.",
+                typeSection, fields, recurringOptions, installmentOptions, error);
 
         Runnable updateKind = () -> {
             AccountKind selected = (AccountKind) kindGroup.getSelectedToggle().getUserData();
@@ -275,8 +276,8 @@ public final class TransactionsController {
         amount.textProperty().addListener((o, oldValue, newValue) -> updateKind.run());
         due.valueProperty().addListener((o, oldValue, newValue) -> updateKind.run());
         count.valueProperty().addListener((o, oldValue, newValue) -> updateKind.run());
-        dialog.getDialogPane().setContent(new ScrollPane(content));
-        ThemeManager.apply(dialog, 680, 690);
+        dialog.getDialogPane().setContent(DialogSupport.scrollRegion(content, 455));
+        DialogSupport.prepare(dialog, transactionList, 700, 570);
 
         Button save = (Button) dialog.getDialogPane().lookupButton(saveType);
         save.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
@@ -329,24 +330,29 @@ public final class TransactionsController {
     }
 
     private void showTransactionForm(Transaction existing) {
-        Dialog<Void> dialog = new Dialog<>(); dialog.initModality(Modality.APPLICATION_MODAL);
-        dialog.setTitle(existing == null ? fixedType == TransactionType.INCOME ? "Nova receita" : "Nova movimentação" : "Editar movimentação");
-        dialog.setHeaderText(existing == null ? "Informe somente os dados necessários" : "Atualize os dados desta movimentação");
-        ButtonType saveType = new ButtonType("Salvar", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(saveType, ButtonType.CANCEL);
+        Dialog<Void> dialog = new Dialog<>();
+        String title = existing == null ? fixedType == TransactionType.INCOME ? "Nova receita" : "Nova movimentação"
+                : existing.type() == TransactionType.INCOME ? "Editar receita" : "Editar movimentação";
+        dialog.setTitle(title);
+        dialog.setHeaderText(title);
+        ButtonType saveType = DialogSupport.primaryAction(existing == null ? "Registrar" : "Salvar alterações");
+        ButtonType cancelType = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(cancelType, saveType);
         ComboBox<TransactionType> type = new ComboBox<>(); type.getItems().setAll(TransactionType.values());
         type.setValue(existing == null ? (fixedType == null ? TransactionType.EXPENSE : fixedType) : existing.type());
         type.setDisable(fixedType != null); ComboBoxSupport.configure(type, TransactionType::displayName);
         TextField description = new TextField(existing == null ? "" : existing.description());
+        description.setPromptText("Ex.: Supermercado");
         TextField amount = new TextField(existing == null ? "" : MoneyUtils.fromCents(existing.amountCents()).toPlainString().replace('.', ','));
+        amount.setPromptText("R$ 0,00"); amount.getStyleClass().add("money-field");
         if (existing != null && existing.origin() == TransactionOrigin.INSTALLMENT) amount.setDisable(true);
         ComboBox<Profile> profile = profilesFor(existing); selectProfile(profile, existing);
         ComboBox<Category> category = new ComboBox<>(); ComboBoxSupport.categories(category);
-        DatePicker reference = new DatePicker(existing == null ? LocalDate.now() : existing.referenceDate());
-        DatePicker due = new DatePicker(existing == null ? null : existing.dueDate());
+        DatePicker reference = DatePickerSupport.configure(new DatePicker(existing == null ? LocalDate.now() : existing.referenceDate()));
+        DatePicker due = DatePickerSupport.configure(new DatePicker(existing == null ? null : existing.dueDate()));
         ComboBox<TransactionStatus> status = new ComboBox<>(); status.getItems().setAll(TransactionStatus.values());
         status.setValue(existing == null ? TransactionStatus.PENDING : existing.status());
-        DatePicker settlement = new DatePicker(existing == null ? null : existing.settlementDate());
+        DatePicker settlement = DatePickerSupport.configure(new DatePicker(existing == null ? null : existing.settlementDate()));
         configureStatusLabels(status, type::getValue);
         status.valueProperty().addListener((observable, oldStatus, newStatus) -> {
             if (newStatus == TransactionStatus.SETTLED && settlement.getValue() == null) settlement.setValue(LocalDate.now());
@@ -366,13 +372,36 @@ public final class TransactionsController {
             else category.getItems().stream().filter(Category::active).findFirst().ifPresent(category::setValue);
         };
         type.valueProperty().addListener((o, a, b) -> loadCategories.run()); loadCategories.run();
-        GridPane grid = formGrid(); int row = 0;
-        add(grid,row++,"Tipo",type,true); add(grid,row++,"Descrição",description,true); add(grid,row++,"Valor",amount,true);
-        add(grid,row++,"Perfil",profile,true); add(grid,row++,"Categoria",category,true); add(grid,row++,"Data de referência",reference,true);
-        add(grid,row++,"Vencimento",due,false); add(grid,row++,"Situação",status,true); add(grid,row++,"Data de conclusão",settlement,false);
-        add(grid,row,"Observações",notes,false);
-        VBox content = new VBox(12, originNotice, grid, error); content.getStyleClass().add("dialog-form");
-        dialog.getDialogPane().setContent(new ScrollPane(content)); ThemeManager.apply(dialog, 660, 680);
+        VBox dueField = DialogSupport.field(type.getValue() == TransactionType.INCOME ? "Data prevista" : "Vencimento", due, false);
+        VBox settlementField = DialogSupport.field("Data de conclusão", settlement, false);
+        Runnable updateVisibility = () -> {
+            boolean settled = status.getValue() == TransactionStatus.SETTLED;
+            settlementField.setVisible(settled); settlementField.setManaged(settled);
+            boolean expense = type.getValue() == TransactionType.EXPENSE;
+            dueField.setVisible(expense); dueField.setManaged(expense);
+        };
+        type.valueProperty().addListener((o, oldValue, newValue) -> updateVisibility.run());
+        status.valueProperty().addListener((o, oldValue, newValue) -> updateVisibility.run());
+        updateVisibility.run();
+
+        VBox mainSection = DialogSupport.section("Movimentação", null,
+                DialogSupport.columns(DialogSupport.field("Tipo", type, true),
+                        DialogSupport.field("Valor", amount, true)),
+                DialogSupport.field("Descrição", description, true));
+        VBox classification = DialogSupport.section("Classificação", null,
+                DialogSupport.columns(DialogSupport.field("Perfil", profile, true),
+                        DialogSupport.field("Categoria", category, true)));
+        VBox dates = DialogSupport.section("Datas e situação", null,
+                DialogSupport.columns(DialogSupport.field("Data de referência", reference, true), dueField),
+                DialogSupport.columns(DialogSupport.field("Situação", status, true), settlementField));
+        VBox notesSection = DialogSupport.section("Observações", null,
+                DialogSupport.field("Informações adicionais", notes, false));
+        VBox content = DialogSupport.content(existing == null
+                        ? "Registre somente as informações necessárias para acompanhar este lançamento."
+                        : "Atualize os dados preservando a origem e o histórico da movimentação.",
+                originNotice, mainSection, classification, dates, notesSection, error);
+        dialog.getDialogPane().setContent(DialogSupport.scrollRegion(content, 455));
+        DialogSupport.prepare(dialog, transactionList, 700, 570);
         Button save = (Button) dialog.getDialogPane().lookupButton(saveType);
         save.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
             event.consume();
@@ -390,42 +419,111 @@ public final class TransactionsController {
     }
 
     private void changeSettlement(Transaction item) {
-        try {
-            if (item.status() == TransactionStatus.SETTLED) context.transactionService().reopen(item.id());
-            else context.transactionService().settle(item.id(), LocalDate.now());
-            showFeedback(item.status() == TransactionStatus.SETTLED ? "Movimentação reaberta."
-                    : item.type() == TransactionType.INCOME ? "Receita marcada como recebida." : "Conta marcada como paga.", false);
-            refresh();
-        } catch (RuntimeException exception) { LOGGER.error("Could not change transaction status", exception); showError("Não foi possível alterar a situação."); }
+        if (item.status() == TransactionStatus.SETTLED) {
+            boolean confirmed = DialogSupport.confirm(transactionList, "Reabrir movimentação",
+                    "Reabrir “" + item.description() + "”?",
+                    "A movimentação voltará a ficar pendente e a data de conclusão será removida.",
+                    "Reabrir", false);
+            if (!confirmed) return;
+            try {
+                context.transactionService().reopen(item.id());
+                showFeedback("Movimentação reaberta.", false);
+                refresh();
+            } catch (RuntimeException exception) {
+                LOGGER.error("Could not reopen transaction", exception);
+                showError("Não foi possível reabrir a movimentação.");
+            }
+            return;
+        }
+
+        Dialog<Void> dialog = new Dialog<>();
+        boolean income = item.type() == TransactionType.INCOME;
+        dialog.setTitle(income ? "Marcar como recebida" : "Marcar como paga");
+        dialog.setHeaderText(income ? "Confirmar recebimento" : "Confirmar pagamento");
+        ButtonType confirmType = DialogSupport.primaryAction(income ? "Confirmar recebimento" : "Confirmar pagamento");
+        ButtonType cancelType = new ButtonType("Voltar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(cancelType, confirmType);
+        DatePicker date = DatePickerSupport.configure(new DatePicker(LocalDate.now()));
+        Label name = new Label(item.description()); name.getStyleClass().add("transaction-description");
+        Label value = new Label(MoneyUtils.formatCents(item.amountCents())); value.getStyleClass().add("money-highlight");
+        VBox summary = new VBox(4, name, value); summary.getStyleClass().add("settlement-summary");
+        VBox content = DialogSupport.content(income
+                        ? "Informe a data em que a receita foi efetivamente recebida."
+                        : "Informe a data em que a conta foi efetivamente paga.",
+                summary, DialogSupport.field(income ? "Data do recebimento" : "Data do pagamento", date, true));
+        dialog.getDialogPane().setContent(content);
+        DialogSupport.prepare(dialog, transactionList, 500, 0);
+        Button confirm = (Button) dialog.getDialogPane().lookupButton(confirmType);
+        confirm.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            event.consume();
+            if (date.getValue() == null) return;
+            try {
+                context.transactionService().settle(item.id(), date.getValue());
+                dialog.close();
+                showFeedback(income ? "Receita marcada como recebida." : "Conta marcada como paga.", false);
+                refresh();
+            } catch (RuntimeException exception) {
+                LOGGER.error("Could not settle transaction", exception);
+                showError("Não foi possível alterar a situação.");
+            }
+        });
+        dialog.showAndWait();
     }
 
     private void cancel(Transaction item) {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                "O registro continuará disponível no histórico.", ButtonType.CANCEL, ButtonType.OK);
-        confirm.setHeaderText("Cancelar “" + item.description() + "”?"); ThemeManager.apply(confirm);
-        if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+        boolean confirmed = DialogSupport.confirm(transactionList, "Cancelar movimentação",
+                "Cancelar “" + item.description() + "”?",
+                "A movimentação deixará de participar dos resultados financeiros, mas continuará disponível no histórico.",
+                "Cancelar movimentação", true);
+        if (confirmed) {
             try { context.transactionService().cancel(item.id()); showFeedback("Movimentação cancelada.", false); refresh(); }
             catch (RuntimeException exception) { LOGGER.error("Could not cancel transaction", exception); showError("Não foi possível cancelar a movimentação."); }
         }
     }
 
     private void view(Transaction item) {
-        Dialog<Void> dialog = new Dialog<>(); dialog.setTitle("Detalhes da movimentação");
-        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
-        VBox content = new VBox(10,
-                detail("Descrição", item.description()), detail("Tipo", item.type().displayName()),
-                detail("Valor", MoneyUtils.formatCents(item.amountCents())), detail("Situação", item.status().displayName(item.type())),
-                detail("Data", DATE.format(item.referenceDate())), detail("Perfil", item.profileName()),
-                detail("Categoria", item.categoryName()), detail("Origem", originText(item)),
-                detail("Observações", item.notes() == null ? "—" : item.notes()));
-        content.getStyleClass().add("details-panel"); dialog.getDialogPane().setContent(content);
-        ThemeManager.apply(dialog, 540, 0); dialog.showAndWait();
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Detalhes da movimentação");
+        dialog.setHeaderText("Detalhes da movimentação");
+        ButtonType editType = DialogSupport.primaryAction("Editar");
+        ButtonType closeType = new ButtonType("Fechar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(closeType, editType);
+
+        boolean overdue = item.isOverdue(Clock.systemDefaultZone());
+        Label title = new Label(item.description()); title.getStyleClass().add("detail-title");
+        Label amount = new Label(MoneyUtils.formatCents(item.amountCents())); amount.getStyleClass().add("money-highlight");
+        Label badge = DialogSupport.statusBadge(overdue ? "Vencida" : item.status().displayName(item.type()),
+                "status-" + (overdue ? "overdue" : item.status().name().toLowerCase()));
+        Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox heroHeader = new HBox(10, title, spacer, badge); heroHeader.setAlignment(Pos.CENTER_LEFT);
+        VBox hero = new VBox(6, heroHeader, amount); hero.getStyleClass().add("detail-hero");
+
+        VBox information = DialogSupport.section("Informações", null,
+                detail("Tipo", item.type().displayName()), detail("Perfil", item.profileName()),
+                detail("Categoria", item.categoryName()), detail("Data de referência", DATE.format(item.referenceDate())),
+                detail("Vencimento", item.dueDate() == null ? "—" : DATE.format(item.dueDate())),
+                detail(item.type() == TransactionType.INCOME ? "Recebimento" : "Pagamento",
+                        item.settlementDate() == null ? "—" : DATE.format(item.settlementDate())));
+        VBox origin = DialogSupport.section("Origem", null, detail("Registro", originText(item)));
+        Label notes = new Label(item.notes() == null || item.notes().isBlank() ? "Nenhuma observação." : item.notes());
+        notes.setWrapText(true); notes.getStyleClass().add("detail-value");
+        VBox notesSection = DialogSupport.section("Observações", null, notes);
+        Button attachmentsButton = new Button("Gerenciar anexos"); attachmentsButton.getStyleClass().add("secondary-button");
+        attachmentsButton.setOnAction(event -> attachments(item));
+        VBox attachmentsSection = DialogSupport.section("Anexos", "Arquivos permanecem vinculados a esta movimentação.", attachmentsButton);
+        VBox content = DialogSupport.content("Consulte os dados organizados e edite quando necessário.",
+                hero, information, origin, notesSection, attachmentsSection);
+        dialog.getDialogPane().setContent(DialogSupport.scrollRegion(content, 470));
+        DialogSupport.prepare(dialog, transactionList, 620, 580);
+        if (dialog.showAndWait().orElse(closeType) == editType) showTransactionForm(item);
     }
 
     private HBox detail(String label, String value) {
-        Label key = new Label(label); key.getStyleClass().add("detail-label"); key.setMinWidth(130);
-        Label text = new Label(value); text.setWrapText(true); HBox.setHgrow(text, Priority.ALWAYS);
-        return new HBox(12, key, text);
+        Label key = new Label(label); key.getStyleClass().add("detail-label"); key.setMinWidth(145);
+        Label text = new Label(value); text.setWrapText(true); text.getStyleClass().add("detail-value");
+        HBox.setHgrow(text, Priority.ALWAYS);
+        HBox row = new HBox(12, key, text); row.getStyleClass().add("detail-row");
+        return row;
     }
 
     private void manageOrigin(Transaction item) {
@@ -442,9 +540,10 @@ public final class TransactionsController {
             else ((InstallmentPlansController) loader.getController()).configure(context);
             Dialog<Void> dialog = new Dialog<>();
             dialog.setTitle(recurring ? "Gerenciar recorrências" : "Gerenciar parcelamentos");
-            dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+            dialog.setHeaderText(recurring ? "Recorrências desta conta" : "Parcelamentos e parcelas");
+            dialog.getDialogPane().getButtonTypes().add(new ButtonType("Fechar", ButtonBar.ButtonData.CANCEL_CLOSE));
             dialog.getDialogPane().setContent(view);
-            ThemeManager.apply(dialog, 900, 680); dialog.showAndWait(); refresh();
+            DialogSupport.prepare(dialog, transactionList, 860, 560); dialog.showAndWait(); refresh();
         } catch (IOException | RuntimeException exception) {
             LOGGER.error("Could not open commitment manager", exception);
             showError("Não foi possível abrir o gerenciamento.");
@@ -453,21 +552,38 @@ public final class TransactionsController {
 
     private void attachments(Transaction item) {
         Dialog<Void> dialog = new Dialog<>(); dialog.setTitle("Anexos · " + item.description());
-        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
-        VBox files = new VBox(8); Button add = new Button("Adicionar arquivos"); add.getStyleClass().add("secondary-button");
+        dialog.setHeaderText("Anexos da movimentação");
+        dialog.getDialogPane().getButtonTypes().add(new ButtonType("Fechar", ButtonBar.ButtonData.CANCEL_CLOSE));
+        VBox files = new VBox(8); files.getStyleClass().add("attachment-list");
+        Button add = new Button("Adicionar anexo"); add.getStyleClass().add("primary-button");
         Runnable[] load = new Runnable[1];
         load[0] = () -> {
             var attachments = context.attachmentService().search(new AttachmentFilter(null, item.profileId(), null,
                     item.type(), null, null, true, null)).stream().filter(a -> item.id().equals(a.transactionId())).toList();
             files.getChildren().clear();
-            if (attachments.isEmpty()) files.getChildren().add(new Label("Nenhum anexo nesta movimentação."));
+            if (attachments.isEmpty()) {
+                Label empty = new Label("Nenhum anexo nesta movimentação.");
+                empty.getStyleClass().add("empty-state");
+                files.getChildren().add(empty);
+            }
             attachments.forEach(file -> {
-                Label label = new Label(file.originalFilename() + " · " + file.integrity().displayName());
+                Label label = new Label(file.originalFilename()); label.getStyleClass().add("attachment-name");
+                Label metadata = new Label(file.fileExtension().toUpperCase() + " · " + formatSize(file.sizeBytes())
+                        + " · " + file.integrity().displayName());
+                metadata.getStyleClass().add("attachment-meta");
+                VBox identity = new VBox(2, label, metadata);
                 Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
                 Button open = textButton("Abrir", () -> context.attachmentService().openExternal(file.id())
                         .exceptionally(error -> { Platform.runLater(() -> showError("Não foi possível abrir o anexo.")); return null; }));
-                Button remove = textButton("Remover", () -> { context.attachmentService().remove(file.id()); load[0].run(); });
-                HBox line = new HBox(8, label, spacer, open, remove); line.setAlignment(Pos.CENTER_LEFT); line.getStyleClass().add("compact-row");
+                Button remove = textButton("Remover", () -> {
+                    if (DialogSupport.confirm(files, "Remover anexo", "Remover “" + file.originalFilename() + "”?",
+                            "O arquivo será removido, mas a movimentação será preservada.", "Remover", true)) {
+                        context.attachmentService().remove(file.id()); load[0].run();
+                    }
+                });
+                remove.getStyleClass().add("destructive-button");
+                HBox line = new HBox(8, identity, spacer, open, remove); line.setAlignment(Pos.CENTER_LEFT);
+                line.getStyleClass().add("attachment-row");
                 files.getChildren().add(line);
             });
         };
@@ -482,8 +598,11 @@ public final class TransactionsController {
                 load[0].run();
             } catch (RuntimeException exception) { showError(exception.getMessage()); }
         });
-        VBox content = new VBox(12, add, files); content.getStyleClass().add("dialog-form"); load[0].run();
-        dialog.getDialogPane().setContent(content); ThemeManager.apply(dialog, 650, 500); dialog.showAndWait();
+        VBox content = DialogSupport.content("Adicione comprovantes, notas e imagens relacionados a este registro.",
+                add, DialogSupport.scrollRegion(files, 300));
+        load[0].run();
+        dialog.getDialogPane().setContent(content);
+        DialogSupport.prepare(dialog, transactionList, 680, 500); dialog.showAndWait();
     }
 
     private ComboBox<Profile> activeProfiles() {
@@ -508,15 +627,6 @@ public final class TransactionsController {
     private ToggleButton kindButton(String text, AccountKind kind, ToggleGroup group) {
         ToggleButton button = new ToggleButton(text); button.setUserData(kind); button.setToggleGroup(group);
         button.setMaxWidth(Double.MAX_VALUE); HBox.setHgrow(button, Priority.ALWAYS); return button;
-    }
-
-    private GridPane formGrid() {
-        GridPane grid = new GridPane(); grid.setHgap(16); grid.setVgap(11); grid.setMaxWidth(620); return grid;
-    }
-
-    private void add(GridPane grid, int row, String text, Control control, boolean required) {
-        Label label = new Label(text + (required ? " *" : "")); label.getStyleClass().add("field-label"); label.setMinWidth(145);
-        control.setMaxWidth(Double.MAX_VALUE); grid.add(label, 0, row); grid.add(control, 1, row); GridPane.setHgrow(control, Priority.ALWAYS);
     }
 
     private Button textButton(String text, Runnable action) {
@@ -545,7 +655,11 @@ public final class TransactionsController {
     }
     private void showError(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR, message == null ? "Não foi possível concluir a operação." : message, ButtonType.OK);
-        alert.setHeaderText("Não foi possível concluir"); ThemeManager.apply(alert); alert.showAndWait();
+        alert.setHeaderText("Não foi possível concluir"); DialogSupport.prepare(alert, transactionList, 500, 0); alert.showAndWait();
+    }
+    private String formatSize(long size) {
+        return size < 1024 ? size + " B" : size < 1024 * 1024
+                ? String.format("%.1f KB", size / 1024d) : String.format("%.1f MB", size / 1024d / 1024d);
     }
     private void toggle(Region node, boolean visible) { node.setVisible(visible); node.setManaged(visible); }
 

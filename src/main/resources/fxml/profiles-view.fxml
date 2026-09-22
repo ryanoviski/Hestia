@@ -2,9 +2,10 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import io.github.ryanoviski.hestia.presentation.components.ColorPalette?>
-<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="io.github.ryanoviski.hestia.presentation.controllers.ProfilesController"
-      spacing="18" styleClass="view,content-constrained">
+<StackPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="io.github.ryanoviski.hestia.presentation.controllers.ProfilesController"
+           alignment="TOP_CENTER" minWidth="0" minHeight="0" styleClass="page-shell">
+<VBox fx:id="pageContent" minWidth="0" minHeight="0" spacing="18" styleClass="view,page-frame">
     <HBox alignment="CENTER_LEFT">
         <VBox spacing="4" HBox.hgrow="ALWAYS">
             <Label text="Perfis" styleClass="view-heading"/>
@@ -13,9 +14,9 @@
         </VBox>
         <Label fx:id="profileCount" styleClass="count-pill"/>
     </HBox>
-    <FlowPane hgap="18" vgap="18" prefWrapLength="920" VBox.vgrow="ALWAYS">
-        <VBox minWidth="430" prefWidth="585" spacing="10">
-            <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" styleClass="content-scroll">
+    <HBox minWidth="0" minHeight="0" spacing="18" VBox.vgrow="ALWAYS">
+        <VBox minWidth="0" minHeight="0" prefWidth="585" spacing="10" HBox.hgrow="ALWAYS">
+            <ScrollPane minHeight="0" fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS" styleClass="content-scroll">
                 <VBox fx:id="profilesList" spacing="9" styleClass="financial-list">
                     <VBox fx:id="emptyState" alignment="CENTER" spacing="7" styleClass="empty-state-large">
                         <Label text="Nenhum perfil cadastrado" styleClass="empty-title"/>
@@ -24,16 +25,18 @@
                 </VBox>
             </ScrollPane>
         </VBox>
-        <VBox minWidth="310" prefWidth="335" maxWidth="360" spacing="12" styleClass="form-card">
+        <VBox minWidth="310" prefWidth="335" maxWidth="360" maxHeight="-Infinity" spacing="12" styleClass="form-card">
             <Label fx:id="formTitle" text="Novo perfil" styleClass="section-title"/>
+            <Label text="Identifique uma pessoa ou um perfil compartilhado." wrapText="true" styleClass="field-hint"/>
             <Label text="Nome" styleClass="field-label"/><TextField fx:id="nameField" promptText="Ex.: Ryan"/>
             <Label text="Tipo" styleClass="field-label"/><ComboBox fx:id="typeField" maxWidth="Infinity"/>
             <Label fx:id="typeHelp" wrapText="true" styleClass="field-hint"/>
             <Label text="Cor de identificação" styleClass="field-label"/><ColorPalette fx:id="colorPalette" maxWidth="Infinity"/>
-            <Label fx:id="formMessage" wrapText="true"/>
+            <Label fx:id="formMessage" wrapText="true" styleClass="feedback-text"/>
             <Button fx:id="saveButton" text="Cadastrar perfil" maxWidth="Infinity" onAction="#saveProfile" styleClass="primary-button"/>
             <Button fx:id="cancelEditButton" text="Cancelar edição" maxWidth="Infinity" onAction="#cancelEdit"
                     visible="false" managed="false" styleClass="ghost-button"/>
         </VBox>
-    </FlowPane>
+    </HBox>
 </VBox>
+</StackPane>

@@ -3,7 +3,7 @@ package io.github.ryanoviski.hestia.presentation.controllers;
 import io.github.ryanoviski.hestia.application.dto.MonthlyReport;
 import io.github.ryanoviski.hestia.config.ApplicationContext;
 import io.github.ryanoviski.hestia.presentation.components.MonthYearPicker;
-import io.github.ryanoviski.hestia.presentation.components.ThemeManager;
+import io.github.ryanoviski.hestia.presentation.components.DialogSupport;
 import io.github.ryanoviski.hestia.util.MoneyUtils;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
@@ -153,7 +153,7 @@ public final class ReportsController {
         Alert alert = new Alert(Alert.AlertType.ERROR,
                 message == null ? "Não foi possível concluir a operação." : message, ButtonType.OK);
         alert.setHeaderText("Relatório indisponível");
-        ThemeManager.apply(alert);
+        DialogSupport.prepare(alert, categoryList, 500, 0);
         alert.showAndWait();
     }
 }

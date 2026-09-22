@@ -9,6 +9,8 @@ import io.github.ryanoviski.hestia.domain.enums.TransactionType;
 import io.github.ryanoviski.hestia.domain.models.Attachment;
 import io.github.ryanoviski.hestia.domain.models.Profile;
 import io.github.ryanoviski.hestia.presentation.components.ComboBoxSupport;
+import io.github.ryanoviski.hestia.presentation.components.DatePickerSupport;
+import io.github.ryanoviski.hestia.presentation.components.DialogSupport;
 import io.github.ryanoviski.hestia.presentation.components.ThemeManager;
 import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
@@ -21,6 +23,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import java.io.File;
 import java.time.format.DateTimeFormatter;
@@ -53,6 +56,8 @@ public final class DocumentsController {
         transactionTypeFilter.getItems().setAll(TransactionType.values());
         integrityFilter.getItems().setAll(AttachmentIntegrity.values());
         originFilter.getItems().setAll("Movimentação", "Perfil");
+        DatePickerSupport.configure(fromFilter);
+        DatePickerSupport.configure(toFilter);
         refresh();
     }
 
@@ -80,18 +85,17 @@ public final class DocumentsController {
         ComboBoxSupport.configure(type, DocumentType::displayName);
         type.setValue(DocumentType.OTHER);
         TextField description = new TextField();
-        GridPane grid = new GridPane();
-        grid.setHgap(12);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(8));
-        add(grid, 0, "Perfil *", profile);
-        add(grid, 1, "Tipo *", type);
-        add(grid, 2, "Descrição", description);
-        dialog.getDialogPane().setContent(grid);
+        VBox fields = DialogSupport.section("Identificação", null,
+                DialogSupport.columns(DialogSupport.field("Perfil", profile, true),
+                        DialogSupport.field("Tipo", type, true)),
+                DialogSupport.field("Descrição", description, false));
+        dialog.getDialogPane().setContent(DialogSupport.content(
+                "Informe o contexto do anexo antes de selecionar o arquivo.", fields));
         ButtonType next = new ButtonType("Selecionar arquivo", ButtonBar.ButtonData.NEXT_FORWARD);
-        dialog.getDialogPane().getButtonTypes().addAll(next, ButtonType.CANCEL);
-        ThemeManager.apply(dialog, 580, 390);
-        if (dialog.showAndWait().orElse(ButtonType.CANCEL) != next || profile.getValue() == null) return;
+        ButtonType cancel = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(cancel, next);
+        DialogSupport.prepare(dialog, documentsList, 600, 0);
+        if (dialog.showAndWait().orElse(cancel) != next || profile.getValue() == null) return;
         File file = chooser("Selecionar documento").showOpenDialog(documentsList.getScene().getWindow());
         if (file != null) {
             try {
@@ -110,7 +114,7 @@ public final class DocumentsController {
                         + "\nArquivos sem registro: " + diagnostic.orphanFiles().size()
                         + "\nTemporários abandonados: " + diagnostic.temporaryFiles().size(), ButtonType.OK);
         alert.setHeaderText("Diagnóstico dos anexos");
-        ThemeManager.apply(alert);
+        DialogSupport.prepare(alert, documentsList, 500, 0);
         alert.showAndWait();
     }
 
@@ -163,12 +167,16 @@ public final class DocumentsController {
         controls.setPadding(new Insets(10));
         controls.setAlignment(Pos.CENTER);
         BorderPane pane = new BorderPane(new ScrollPane(view), controls, null, null, null);
-        stage.setScene(new Scene(pane, 900, 700));
-        stage.setMinWidth(680);
-        stage.setMinHeight(520);
+        Window owner = documentsList.getScene().getWindow();
+        stage.initOwner(owner);
+        stage.setScene(new Scene(pane, 820, 560));
+        stage.setMinWidth(600);
+        stage.setMinHeight(420);
         stage.setTitle(attachment.originalFilename());
         ThemeManager.apply(stage);
         stage.show();
+        stage.setX(owner.getX() + Math.max(0, (owner.getWidth() - stage.getWidth()) / 2));
+        stage.setY(owner.getY() + Math.max(0, (owner.getHeight() - stage.getHeight()) / 2));
         int[] page = {0};
         int[] pages = {1};
         float[] dpi = {110};
@@ -222,28 +230,15 @@ public final class DocumentsController {
     }
 
     private boolean confirm(String header, String text) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, text, ButtonType.CANCEL, ButtonType.OK);
-        alert.setHeaderText(header);
-        ThemeManager.apply(alert);
-        return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
+        return DialogSupport.confirm(documentsList, header, header, text, "Confirmar", true);
     }
 
     private void error(String text) {
         Alert alert = new Alert(Alert.AlertType.ERROR,
                 text == null ? "Não foi possível concluir a operação." : text, ButtonType.OK);
         alert.setHeaderText("Não foi possível concluir a operação");
-        ThemeManager.apply(alert);
+        DialogSupport.prepare(alert, documentsList, 500, 0);
         alert.showAndWait();
-    }
-
-    private void add(GridPane grid, int row, String text, Control control) {
-        Label label = new Label(text);
-        label.getStyleClass().add("field-label");
-        label.setMinWidth(120);
-        grid.add(label, 0, row);
-        control.setMaxWidth(Double.MAX_VALUE);
-        grid.add(control, 1, row);
-        GridPane.setHgrow(control, Priority.ALWAYS);
     }
 
     private MenuItem menu(String text, Runnable action) {

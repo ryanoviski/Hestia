@@ -32,12 +32,13 @@
         <VBox fx:id="categoryFormCard" minWidth="310" prefWidth="335" maxWidth="360" maxHeight="-Infinity"
               spacing="12" styleClass="form-card">
             <Label fx:id="formTitle" text="Nova categoria" styleClass="section-title"/>
+            <Label text="Crie uma identificação curta para seus lançamentos." wrapText="true" styleClass="field-hint"/>
             <Label text="Nome" styleClass="field-label"/><TextField fx:id="nameField" promptText="Ex.: Pets"/>
             <Label text="Tipo" styleClass="field-label"/><ComboBox fx:id="typeField" maxWidth="Infinity"/>
             <Label text="Cor de identificação" styleClass="field-label"/><ColorPalette fx:id="colorPalette" maxWidth="Infinity"/>
             <Label text="Categorias padrão podem ser personalizadas sem alterar a base do Hestia."
                    wrapText="true" styleClass="field-hint"/>
-            <Label fx:id="formMessage" wrapText="true"/>
+            <Label fx:id="formMessage" wrapText="true" styleClass="feedback-text"/>
             <Button text="Salvar categoria" onAction="#saveCategory" maxWidth="Infinity" styleClass="primary-button"/>
             <Button fx:id="cancelEditButton" text="Cancelar edição" onAction="#cancelEdit"
                     visible="false" managed="false" maxWidth="Infinity" styleClass="ghost-button"/>

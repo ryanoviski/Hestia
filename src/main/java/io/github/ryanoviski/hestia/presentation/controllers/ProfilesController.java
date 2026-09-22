@@ -9,13 +9,11 @@ import io.github.ryanoviski.hestia.domain.exceptions.ValidationException;
 import io.github.ryanoviski.hestia.domain.models.Profile;
 import io.github.ryanoviski.hestia.presentation.components.ColorPalette;
 import io.github.ryanoviski.hestia.presentation.components.ComboBoxSupport;
-import io.github.ryanoviski.hestia.presentation.components.ThemeManager;
+import io.github.ryanoviski.hestia.presentation.components.DialogSupport;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
-import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -48,6 +46,7 @@ public final class ProfilesController {
         typeField.getItems().setAll(ProfileType.values());
         typeField.setValue(ProfileType.PERSON);
         typeField.valueProperty().addListener((observable, oldValue, newValue) -> updateTypeHelp(newValue));
+        nameField.textProperty().addListener((observable, oldValue, newValue) -> nameField.getStyleClass().remove("field-invalid"));
         updateTypeHelp(typeField.getValue());
     }
 
@@ -67,6 +66,10 @@ public final class ProfilesController {
             showMessage(creating ? "Perfil cadastrado com sucesso." : "Perfil atualizado com sucesso.", false);
             refresh();
         } catch (ValidationException exception) {
+            if (nameField.getText() == null || nameField.getText().isBlank()) {
+                if (!nameField.getStyleClass().contains("field-invalid")) nameField.getStyleClass().add("field-invalid");
+                nameField.requestFocus();
+            }
             showMessage(exception.getMessage(), true);
         } catch (RuntimeException exception) {
             LOGGER.error("Could not save profile", exception);
@@ -79,6 +82,7 @@ public final class ProfilesController {
         formTitle.setText("Novo perfil");
         saveButton.setText("Cadastrar perfil");
         nameField.clear();
+        nameField.getStyleClass().remove("field-invalid");
         typeField.setValue(ProfileType.PERSON);
         colorPalette.setSelectedColor(null);
         cancelEditButton.setVisible(false);
@@ -173,13 +177,9 @@ public final class ProfilesController {
     }
 
     private void delete(Profile profile) {
-        Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION,
-                "Excluir o perfil \"" + profile.name() + "\"? A exclusão só será permitida se não houver histórico ou anexos vinculados.",
-                ButtonType.CANCEL, ButtonType.OK);
-        confirmation.setTitle("Excluir perfil");
-        confirmation.setHeaderText("Confirme a exclusão permanente");
-        ThemeManager.apply(confirmation);
-        if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
+        if (!DialogSupport.confirm(profilesList, "Excluir perfil", "Excluir “" + profile.name() + "”?",
+                "A exclusão só será permitida quando não houver histórico ou anexos vinculados.",
+                "Excluir perfil", true)) return;
         try {
             service.deleteProfile(profile.id());
             if (editing != null && editing.id().equals(profile.id())) cancelEdit();
@@ -196,41 +196,44 @@ public final class ProfilesController {
     private void manageAttachments(Profile profile) {
         Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle("Anexos · " + profile.name());
-        dialog.setHeaderText("Arquivos vinculados ao perfil");
-        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
-        VBox content = new VBox(10);
-        content.setPadding(new Insets(8));
-        Button add = new Button("Adicionar arquivos");
+        dialog.setHeaderText("Anexos do perfil");
+        dialog.getDialogPane().getButtonTypes().add(new ButtonType("Fechar", ButtonBar.ButtonData.CANCEL_CLOSE));
+        VBox filesList = new VBox(8); filesList.getStyleClass().add("attachment-list");
+        Button add = new Button("Adicionar anexo");
         add.getStyleClass().add("primary-button");
 
         Runnable[] load = new Runnable[1];
         load[0] = () -> {
             var attachments = context.attachmentService().search(new AttachmentFilter(
                     null, profile.id(), null, null, null, null, false, null));
-            content.getChildren().removeIf(node -> node != add);
-            if (attachments.isEmpty()) content.getChildren().add(new Label("Nenhum anexo neste perfil."));
+            filesList.getChildren().clear();
+            if (attachments.isEmpty()) {
+                Label empty = new Label("Nenhum anexo neste perfil."); empty.getStyleClass().add("empty-state");
+                filesList.getChildren().add(empty);
+            }
             attachments.forEach(attachment -> {
-                Label label = new Label(attachment.originalFilename() + " · "
-                        + attachment.documentType().displayName() + " · " + attachment.integrity().displayName());
-                label.setWrapText(true);
+                Label label = new Label(attachment.originalFilename()); label.getStyleClass().add("attachment-name");
+                Label metadata = new Label(attachment.fileExtension().toUpperCase() + " · "
+                        + formatSize(attachment.sizeBytes()) + " · " + attachment.documentType().displayName()
+                        + " · " + attachment.integrity().displayName());
+                metadata.getStyleClass().add("attachment-meta");
+                VBox identity = new VBox(2, label, metadata);
                 Region spacer = new Region();
                 HBox.setHgrow(spacer, Priority.ALWAYS);
                 Button open = action("Abrir", "table-action", () -> context.attachmentService().openExternal(attachment.id())
                         .exceptionally(error -> { Platform.runLater(() -> showMessage("Não foi possível abrir o anexo.", true)); return null; }));
                 Button remove = action("Remover", "destructive-button", () -> {
-                    Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION,
-                            "Remover o arquivo \"" + attachment.originalFilename() + "\"? O perfil será preservado.",
-                            ButtonType.CANCEL, ButtonType.OK);
-                    ThemeManager.apply(confirmation);
-                    if (confirmation.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+                    if (DialogSupport.confirm(filesList, "Remover anexo",
+                            "Remover “" + attachment.originalFilename() + "”?",
+                            "O arquivo será removido, mas o perfil será preservado.", "Remover", true)) {
                         context.attachmentService().remove(attachment.id());
                         load[0].run();
                     }
                 });
-                HBox attachmentRow = new HBox(8, label, spacer, open, remove);
+                HBox attachmentRow = new HBox(8, identity, spacer, open, remove);
                 attachmentRow.setAlignment(Pos.CENTER_LEFT);
-                attachmentRow.getStyleClass().add("transaction-row");
-                content.getChildren().add(attachmentRow);
+                attachmentRow.getStyleClass().add("attachment-row");
+                filesList.getChildren().add(attachmentRow);
             });
         };
 
@@ -248,10 +251,11 @@ public final class ProfilesController {
             }
         });
 
-        content.getChildren().add(add);
         load[0].run();
-        dialog.getDialogPane().setContent(new ScrollPane(content));
-        ThemeManager.apply(dialog, 700, 520);
+        VBox content = DialogSupport.content("Arquivos pessoais ficam armazenados somente neste computador.",
+                add, DialogSupport.scrollRegion(filesList, 300));
+        dialog.getDialogPane().setContent(content);
+        DialogSupport.prepare(dialog, profilesList, 700, 500);
         dialog.showAndWait();
     }
 
@@ -264,5 +268,10 @@ public final class ProfilesController {
         formMessage.setText(message == null ? "Não foi possível concluir a operação." : message);
         formMessage.getStyleClass().removeAll("form-error", "form-success");
         formMessage.getStyleClass().add(error ? "form-error" : "form-success");
+    }
+
+    private String formatSize(long size) {
+        return size < 1024 ? size + " B" : size < 1024 * 1024
+                ? String.format("%.1f KB", size / 1024d) : String.format("%.1f MB", size / 1024d / 1024d);
     }
 }

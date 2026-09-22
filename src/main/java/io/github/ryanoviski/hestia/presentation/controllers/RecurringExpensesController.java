@@ -8,10 +8,10 @@ import io.github.ryanoviski.hestia.domain.models.Category;
 import io.github.ryanoviski.hestia.domain.models.Profile;
 import io.github.ryanoviski.hestia.domain.models.RecurringExpense;
 import io.github.ryanoviski.hestia.presentation.components.ComboBoxSupport;
-import io.github.ryanoviski.hestia.presentation.components.ThemeManager;
+import io.github.ryanoviski.hestia.presentation.components.DatePickerSupport;
+import io.github.ryanoviski.hestia.presentation.components.DialogSupport;
 import io.github.ryanoviski.hestia.util.MoneyUtils;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -79,11 +79,13 @@ public final class RecurringExpensesController {
             ButtonType cancel = new ButtonType("Desativar e cancelar pendentes");
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
                     "Escolha se as ocorrências futuras ainda pendentes também devem ser canceladas.",
-                    ButtonType.CANCEL, deactivate, cancel);
+                    new ButtonType("Voltar", ButtonBar.ButtonData.CANCEL_CLOSE), deactivate, cancel);
+            alert.setTitle("Desativar recorrência");
             alert.setHeaderText("Desativar recorrência");
-            ThemeManager.apply(alert);
+            DialogSupport.prepare(alert, list, 540, 0);
+            DialogSupport.markDestructive(alert, cancel);
             ButtonType answer = alert.showAndWait().orElse(ButtonType.CANCEL);
-            if (answer == ButtonType.CANCEL) return;
+            if (answer.getButtonData() == ButtonBar.ButtonData.CANCEL_CLOSE) return;
             cancelPending = answer == cancel;
         }
         context.recurringExpenseService().setActive(item.id(), !item.active(), cancelPending);
@@ -93,12 +95,15 @@ public final class RecurringExpensesController {
     private void form(RecurringExpense existing) {
         Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle(existing == null ? "Nova recorrência" : "Editar recorrência");
-        dialog.setHeaderText(existing == null ? "Cadastre um compromisso mensal" : "Atualize os próximos compromissos");
-        ButtonType saveType = new ButtonType("Salvar recorrência", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(saveType, ButtonType.CANCEL);
+        dialog.setHeaderText(existing == null ? "Nova conta recorrente" : "Editar conta recorrente");
+        ButtonType saveType = DialogSupport.primaryAction(existing == null ? "Criar recorrência" : "Salvar alterações");
+        ButtonType cancelType = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(cancelType, saveType);
 
         TextField description = new TextField(existing == null ? "" : existing.description());
+        description.setPromptText("Ex.: Aluguel");
         TextField amount = new TextField(existing == null ? "" : existing.amount().toPlainString().replace('.', ','));
+        amount.setPromptText("R$ 0,00"); amount.getStyleClass().add("money-field");
         ComboBox<Profile> profile = new ComboBox<>();
         profile.getItems().setAll(context.profileService().listProfiles());
         ComboBoxSupport.profiles(profile);
@@ -106,38 +111,33 @@ public final class RecurringExpensesController {
         category.getItems().setAll(context.categoryService().search(CategoryType.EXPENSE, null, existing != null));
         ComboBoxSupport.categories(category);
         select(profile, category, existing);
-        DatePicker first = new DatePicker(existing == null ? LocalDate.now() : existing.firstDueDate());
-        DatePicker end = new DatePicker(existing == null ? null : existing.endDate());
+        DatePicker first = DatePickerSupport.configure(new DatePicker(existing == null ? LocalDate.now() : existing.firstDueDate()));
+        DatePicker end = DatePickerSupport.configure(new DatePicker(existing == null ? null : existing.endDate()));
         TextArea notes = new TextArea(existing == null ? "" : existing.notes());
-        notes.setPrefRowCount(3);
+        notes.setPrefRowCount(2);
         notes.setWrapText(true);
         CheckBox active = new CheckBox("Recorrência ativa");
         active.setSelected(existing == null || existing.active());
-        Label hint = new Label(existing == null
-                ? "O Hestia gerará ocorrências mensais até 12 meses à frente."
-                : "A alteração alcança apenas ocorrências futuras, pendentes e ainda não personalizadas.");
-        hint.setWrapText(true);
-        hint.getStyleClass().add("origin-notice");
         Label error = new Label();
         error.setWrapText(true);
         error.getStyleClass().add("form-error");
 
-        GridPane grid = grid();
-        int row = 0;
-        grid.add(hint, 0, row++, 2, 1);
-        add(grid, row++, "Descrição *", description);
-        add(grid, row++, "Valor previsto *", amount);
-        add(grid, row++, "Perfil *", profile);
-        add(grid, row++, "Categoria *", category);
-        add(grid, row++, "Primeiro vencimento *", first);
-        add(grid, row++, "Data final (opcional)", end);
-        add(grid, row++, "Observações", notes);
-        grid.add(active, 1, row++);
-        grid.add(error, 1, row);
-        ScrollPane scroll = new ScrollPane(grid);
-        scroll.setFitToWidth(true);
-        dialog.getDialogPane().setContent(scroll);
-        ThemeManager.apply(dialog, 650, 650);
+        VBox information = DialogSupport.section("Informações da conta", null,
+                DialogSupport.field("Descrição", description, true),
+                DialogSupport.columns(DialogSupport.field("Valor previsto", amount, true),
+                        DialogSupport.field("Primeiro vencimento", first, true)),
+                DialogSupport.columns(DialogSupport.field("Perfil", profile, true),
+                        DialogSupport.field("Categoria", category, true)));
+        VBox repetition = DialogSupport.section("Repetição", existing == null
+                        ? "O Hestia gerará ocorrências mensais usando as regras atuais do serviço."
+                        : "A alteração alcança somente ocorrências futuras, pendentes e ainda não personalizadas.",
+                DialogSupport.field("Data final (opcional)", end, false), active);
+        VBox notesSection = DialogSupport.section("Observações", null,
+                DialogSupport.field("Informações adicionais", notes, false));
+        VBox content = DialogSupport.content("Organize um compromisso mensal sem criar lançamentos manualmente.",
+                information, repetition, notesSection, error);
+        dialog.getDialogPane().setContent(DialogSupport.scrollRegion(content, 455));
+        DialogSupport.prepare(dialog, list, 690, 570);
 
         ((Button) dialog.getDialogPane().lookupButton(saveType)).addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
             event.consume();
@@ -164,24 +164,6 @@ public final class RecurringExpensesController {
             profiles.getItems().stream().filter(item -> item.id().equals(existing.profileId())).findFirst().ifPresent(profiles::setValue);
             categories.getItems().stream().filter(item -> item.id().equals(existing.categoryId())).findFirst().ifPresent(categories::setValue);
         }
-    }
-
-    private GridPane grid() {
-        GridPane grid = new GridPane();
-        grid.setHgap(14);
-        grid.setVgap(11);
-        grid.setPadding(new Insets(8));
-        return grid;
-    }
-
-    private void add(GridPane grid, int row, String text, Control control) {
-        Label label = new Label(text);
-        label.getStyleClass().add("field-label");
-        label.setMinWidth(170);
-        grid.add(label, 0, row);
-        control.setMaxWidth(Double.MAX_VALUE);
-        grid.add(control, 1, row);
-        GridPane.setHgrow(control, Priority.ALWAYS);
     }
 
     private MenuItem menu(String text, Runnable action) {

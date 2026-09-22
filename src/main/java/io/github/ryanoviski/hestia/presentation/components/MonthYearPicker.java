@@ -68,8 +68,9 @@ public final class MonthYearPicker extends Button {
         Dialog<YearMonth> dialog = new Dialog<>();
         dialog.setTitle("Selecionar mês");
         dialog.setHeaderText("Escolha o mês e o ano");
-        ButtonType confirm = new ButtonType("Selecionar", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(confirm, ButtonType.CANCEL);
+        ButtonType confirm = DialogSupport.primaryAction("Selecionar");
+        ButtonType cancel = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(cancel, confirm);
 
         int[] selectedYear = {getValue().getYear()};
         int[] selectedMonth = {getValue().getMonthValue()};
@@ -138,7 +139,7 @@ public final class MonthYearPicker extends Button {
         dialog.getDialogPane().setContent(content);
         dialog.setResultConverter(button -> button == confirm
                 ? YearMonth.of(selectedYear[0], selectedMonth[0]) : null);
-        ThemeManager.apply(dialog, 480, 430);
+        DialogSupport.prepare(dialog, this, 480, 430);
         dialog.showAndWait().ifPresent(this::setValue);
     }
 }

@@ -9,10 +9,10 @@ import io.github.ryanoviski.hestia.domain.models.Category;
 import io.github.ryanoviski.hestia.domain.models.InstallmentPlan;
 import io.github.ryanoviski.hestia.domain.models.Profile;
 import io.github.ryanoviski.hestia.presentation.components.ComboBoxSupport;
-import io.github.ryanoviski.hestia.presentation.components.ThemeManager;
+import io.github.ryanoviski.hestia.presentation.components.DatePickerSupport;
+import io.github.ryanoviski.hestia.presentation.components.DialogSupport;
 import io.github.ryanoviski.hestia.util.MoneyUtils;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
@@ -40,13 +40,15 @@ public final class InstallmentPlansController {
     @FXML private void create() {
         Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle("Nova compra parcelada");
-        dialog.setHeaderText("Cadastre um compromisso parcelado independente");
-        ButtonType saveType = new ButtonType("Gerar parcelas", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(saveType, ButtonType.CANCEL);
+        dialog.setHeaderText("Nova conta parcelada");
+        ButtonType saveType = DialogSupport.primaryAction("Gerar parcelas");
+        ButtonType cancelType = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(cancelType, saveType);
         TextField description = new TextField();
-        TextField amount = new TextField();
+        description.setPromptText("Ex.: Notebook");
+        TextField amount = new TextField(); amount.setPromptText("R$ 0,00"); amount.getStyleClass().add("money-field");
         Spinner<Integer> count = new Spinner<>(1, 120, 2);
-        count.setEditable(true);
+        count.setEditable(true); count.setMaxWidth(Double.MAX_VALUE);
         ComboBox<Profile> profile = new ComboBox<>();
         profile.getItems().setAll(context.profileService().listProfiles().stream().filter(Profile::active).toList());
         ComboBoxSupport.profiles(profile);
@@ -55,34 +57,52 @@ public final class InstallmentPlansController {
         category.getItems().setAll(context.categoryService().search(CategoryType.EXPENSE, null, false));
         ComboBoxSupport.categories(category);
         category.getItems().stream().findFirst().ifPresent(category::setValue);
-        DatePicker first = new DatePicker(LocalDate.now());
+        DatePicker first = DatePickerSupport.configure(new DatePicker(LocalDate.now()));
         TextArea notes = new TextArea();
-        notes.setPrefRowCount(3);
+        notes.setPrefRowCount(2);
         notes.setWrapText(true);
-        Label hint = new Label("As parcelas serão compromissos próprios do Hestia, sem vínculo com banco ou cartão.");
-        hint.setWrapText(true);
-        hint.getStyleClass().add("origin-notice");
         Label error = new Label();
         error.setWrapText(true);
         error.getStyleClass().add("form-error");
-        GridPane grid = new GridPane();
-        grid.setHgap(14);
-        grid.setVgap(11);
-        grid.setPadding(new Insets(8));
-        int row = 0;
-        grid.add(hint, 0, row++, 2, 1);
-        add(grid, row++, "Descrição *", description);
-        add(grid, row++, "Valor total *", amount);
-        add(grid, row++, "Quantidade de parcelas *", count);
-        add(grid, row++, "Perfil *", profile);
-        add(grid, row++, "Categoria *", category);
-        add(grid, row++, "Primeiro vencimento *", first);
-        add(grid, row++, "Observações", notes);
-        grid.add(error, 1, row);
-        ScrollPane scroll = new ScrollPane(grid);
-        scroll.setFitToWidth(true);
-        dialog.getDialogPane().setContent(scroll);
-        ThemeManager.apply(dialog, 660, 620);
+        VBox preview = new VBox(5); preview.getStyleClass().add("installment-preview");
+        Runnable updatePreview = () -> {
+            preview.getChildren().clear();
+            try {
+                var installments = context.installmentPlanService().preview(description.getText(),
+                        MoneyUtils.parseBrazilian(amount.getText()), count.getValue(), first.getValue());
+                Label total = new Label(count.getValue() + " parcelas · total " + MoneyUtils.formatCents(
+                        installments.stream().mapToLong(item -> item.amountCents()).sum()));
+                total.getStyleClass().add("transaction-description");
+                preview.getChildren().add(total);
+                installments.stream().limit(3).forEach(item -> {
+                    Label line = new Label(item.sequence() + "ª parcela · " + MoneyUtils.formatCents(item.amountCents())
+                            + " · " + DATE.format(item.dueDate()));
+                    line.getStyleClass().add("installment-meta"); preview.getChildren().add(line);
+                });
+                if (installments.size() > 3) preview.getChildren().add(new Label("+ " + (installments.size() - 3) + " parcelas"));
+            } catch (RuntimeException exception) {
+                Label hint = new Label("Informe valor, quantidade e vencimento para visualizar o resumo.");
+                hint.getStyleClass().add("form-section-help"); preview.getChildren().add(hint);
+            }
+        };
+        amount.textProperty().addListener((o, oldValue, newValue) -> updatePreview.run());
+        count.valueProperty().addListener((o, oldValue, newValue) -> updatePreview.run());
+        first.valueProperty().addListener((o, oldValue, newValue) -> updatePreview.run());
+        updatePreview.run();
+
+        VBox information = DialogSupport.section("Informações da compra", null,
+                DialogSupport.field("Descrição", description, true),
+                DialogSupport.columns(DialogSupport.field("Valor total", amount, true),
+                        DialogSupport.field("Número de parcelas", count, true)),
+                DialogSupport.columns(DialogSupport.field("Primeiro vencimento", first, true),
+                        DialogSupport.field("Perfil", profile, true)),
+                DialogSupport.field("Categoria", category, true),
+                DialogSupport.field("Observações", notes, false));
+        VBox summary = DialogSupport.section("Resumo", "Valores calculados pelo serviço de parcelamento.", preview);
+        VBox content = DialogSupport.content(
+                "As parcelas são compromissos independentes, sem vínculo com banco ou cartão.", information, summary, error);
+        dialog.getDialogPane().setContent(DialogSupport.scrollRegion(content, 455));
+        DialogSupport.prepare(dialog, list, 700, 570);
         ((Button) dialog.getDialogPane().lookupButton(saveType)).addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
             event.consume();
             try {
@@ -128,40 +148,57 @@ public final class InstallmentPlansController {
     }
 
     private void details(InstallmentPlan plan) {
-        StringBuilder text = new StringBuilder();
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle("Parcelas · " + plan.description());
+        dialog.setHeaderText("Detalhes do parcelamento");
+        dialog.getDialogPane().getButtonTypes().add(new ButtonType("Fechar", ButtonBar.ButtonData.CANCEL_CLOSE));
+
+        Label name = new Label(plan.description()); name.getStyleClass().add("detail-title");
+        Label total = new Label(MoneyUtils.formatCents(plan.totalAmountCents())); total.getStyleClass().add("money-highlight");
+        String statusClass = plan.pendingCount() == 0 ? "status-settled"
+                : plan.cancelledCount() > 0 ? "status-cancelled" : "status-pending";
+        Label status = DialogSupport.statusBadge(plan.calculatedStatus().displayName(), statusClass);
+        Region spacer = new Region(); HBox.setHgrow(spacer, Priority.ALWAYS);
+        HBox header = new HBox(10, name, spacer, status); header.setAlignment(Pos.CENTER_LEFT);
+        Label progress = new Label(plan.paidCount() + " de " + plan.installmentCount() + " parcelas pagas · "
+                + MoneyUtils.formatCents(plan.remainingAmountCents()) + " restante");
+        progress.getStyleClass().add("form-section-help");
+        VBox hero = new VBox(5, header, total, progress); hero.getStyleClass().add("detail-hero");
+
+        VBox installments = new VBox(7); installments.getStyleClass().add("installment-list");
         for (var installment : context.installmentPlanService().installments(plan.id())) {
-            text.append(installment.number()).append('/').append(plan.installmentCount()).append(" · ")
-                    .append(DATE.format(installment.dueDate())).append(" · ")
-                    .append(MoneyUtils.formatCents(installment.plannedAmountCents())).append(" · ")
-                    .append(installment.status().displayName(TransactionType.EXPENSE)).append('\n');
+            boolean overdue = installment.status() == io.github.ryanoviski.hestia.domain.enums.TransactionStatus.PENDING
+                    && installment.dueDate().isBefore(LocalDate.now());
+            Label number = new Label(installment.number() + "/" + plan.installmentCount());
+            number.getStyleClass().add("installment-number"); number.setMinWidth(48);
+            Label due = new Label(DATE.format(installment.dueDate())); due.getStyleClass().add("installment-meta");
+            Label value = new Label(MoneyUtils.formatCents(installment.plannedAmountCents()));
+            value.getStyleClass().add("transaction-amount");
+            Label badge = DialogSupport.statusBadge(overdue ? "Vencida"
+                            : installment.status().displayName(TransactionType.EXPENSE),
+                    "status-" + (overdue ? "overdue" : installment.status().name().toLowerCase()));
+            Region rowSpacer = new Region(); HBox.setHgrow(rowSpacer, Priority.ALWAYS);
+            HBox row = new HBox(10, number, due, rowSpacer, value, badge);
+            row.setAlignment(Pos.CENTER_LEFT); row.getStyleClass().add("installment-row");
+            installments.getChildren().add(row);
         }
-        Alert alert = new Alert(Alert.AlertType.INFORMATION, text.toString(), ButtonType.OK);
-        alert.setHeaderText(plan.description());
-        alert.setTitle("Parcelas");
-        ThemeManager.apply(alert, 620, 500);
-        alert.showAndWait();
+        VBox listSection = DialogSupport.section("Parcelas",
+                "Próximo vencimento: " + (plan.nextDueDate() == null ? "nenhum" : DATE.format(plan.nextDueDate())),
+                DialogSupport.scrollRegion(installments, 300));
+        VBox content = DialogSupport.content("Acompanhe o progresso sem expandir o diálogo além da área disponível.",
+                hero, listSection);
+        dialog.getDialogPane().setContent(content);
+        DialogSupport.prepare(dialog, list, 700, 570);
+        dialog.showAndWait();
     }
 
     private void cancel(InstallmentPlan plan) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-                "Somente parcelas atuais ou futuras ainda pendentes serão canceladas. Parcelas pagas serão preservadas.",
-                ButtonType.CANCEL, ButtonType.OK);
-        alert.setHeaderText("Cancelar parcelas restantes");
-        ThemeManager.apply(alert);
-        if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+        if (DialogSupport.confirm(list, "Cancelar parcelas", "Cancelar parcelas restantes?",
+                "Somente parcelas pendentes serão canceladas. Parcelas já pagas permanecerão no histórico.",
+                "Cancelar restantes", true)) {
             context.installmentPlanService().cancelRemaining(plan.id());
             refresh();
         }
-    }
-
-    private void add(GridPane grid, int row, String text, Control control) {
-        Label label = new Label(text);
-        label.getStyleClass().add("field-label");
-        label.setMinWidth(180);
-        grid.add(label, 0, row);
-        control.setMaxWidth(Double.MAX_VALUE);
-        grid.add(control, 1, row);
-        GridPane.setHgrow(control, Priority.ALWAYS);
     }
 
     private MenuItem menu(String text, Runnable action) {

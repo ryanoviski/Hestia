@@ -2,7 +2,7 @@ package io.github.ryanoviski.hestia.presentation.controllers;
 
 import io.github.ryanoviski.hestia.application.services.DashboardService;
 import io.github.ryanoviski.hestia.presentation.components.MonthYearPicker;
-import io.github.ryanoviski.hestia.presentation.components.ThemeManager;
+import io.github.ryanoviski.hestia.presentation.components.DialogSupport;
 import io.github.ryanoviski.hestia.util.MoneyUtils;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
@@ -84,7 +84,7 @@ public final class DashboardController {
         } catch (RuntimeException exception) {
             LOGGER.error("Could not update dashboard", exception);
             Alert alert = new Alert(Alert.AlertType.ERROR, "Não foi possível atualizar o painel.", ButtonType.OK);
-            alert.setHeaderText("Painel indisponível"); ThemeManager.apply(alert); alert.showAndWait();
+            alert.setHeaderText("Painel indisponível"); DialogSupport.prepare(alert, upcomingList, 500, 0); alert.showAndWait();
         }
     }
 

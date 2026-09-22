@@ -6,6 +6,8 @@ import io.github.ryanoviski.hestia.domain.models.Category;
 import io.github.ryanoviski.hestia.domain.models.Profile;
 import io.github.ryanoviski.hestia.presentation.components.ColorPalette;
 import io.github.ryanoviski.hestia.presentation.components.ComboBoxSupport;
+import io.github.ryanoviski.hestia.presentation.components.DatePickerSupport;
+import io.github.ryanoviski.hestia.presentation.components.DialogSupport;
 import io.github.ryanoviski.hestia.presentation.components.MonthYearPicker;
 import io.github.ryanoviski.hestia.presentation.components.ThemeManager;
 import javafx.application.Platform;
@@ -16,6 +18,9 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
@@ -33,6 +38,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -149,7 +155,7 @@ class JavaFxViewSmokeTest {
         Platform.runLater(() -> {
             try {
                 for (String resource : new String[]{"dashboard-view.fxml", "settings-view.fxml",
-                        "reports-view.fxml"}) {
+                        "reports-view.fxml", "transactions-view.fxml", "profiles-view.fxml"}) {
                     Parent shell = new FXMLLoader(getClass().getResource("/fxml/main-view.fxml")).load();
                     Parent view = new FXMLLoader(getClass().getResource("/fxml/" + resource)).load();
                     StackPane contentArea = (StackPane) shell.lookup("#contentArea");
@@ -161,8 +167,10 @@ class JavaFxViewSmokeTest {
                     shell.layout();
 
                     Node pageContent = view.lookup("#pageContent");
-                    Node viewport = view.lookup(".viewport");
-                    Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
+                    Node viewport = view instanceof ScrollPane ? view.lookup(".viewport") : null;
+                    Bounds viewportBounds = viewport == null
+                            ? contentArea.localToScene(contentArea.getBoundsInLocal())
+                            : viewport.localToScene(viewport.getBoundsInLocal());
                     Bounds pageBounds = pageContent.localToScene(pageContent.getBoundsInLocal());
                     double leftSpace = pageBounds.getMinX() - viewportBounds.getMinX();
                     double rightSpace = viewportBounds.getMaxX() - pageBounds.getMaxX();
@@ -171,6 +179,42 @@ class JavaFxViewSmokeTest {
                     assertThat(pageBounds.getWidth()).as(resource + " bounded width")
                             .isLessThanOrEqualTo(resource.startsWith("settings") ? 820.5 : 1080.5);
                 }
+                checked.complete(null);
+            } catch (Throwable error) {
+                checked.completeExceptionally(error);
+            }
+        });
+        checked.get(20, TimeUnit.SECONDS);
+    }
+
+    @Test
+    void secondaryInterfaceComponentsAreCompactAndConsistent() throws Exception {
+        CompletableFuture<Void> checked = new CompletableFuture<>();
+        Platform.runLater(() -> {
+            try {
+                DatePicker date = DatePickerSupport.configure(new DatePicker(LocalDate.of(2026, 9, 22)));
+                assertThat(date.getConverter().toString(date.getValue())).isEqualTo("22/09/2026");
+                assertThat(date.getPromptText()).isEqualTo("dd/mm/aaaa");
+
+                VBox longList = new VBox(6);
+                for (int index = 1; index <= 25; index++) longList.getChildren().add(new Label("Parcela " + index));
+                ScrollPane scroll = DialogSupport.scrollRegion(longList, 280);
+                assertThat(scroll.getMaxHeight()).isEqualTo(280);
+                assertThat(scroll.isFitToWidth()).isTrue();
+                assertThat(scroll.getHbarPolicy()).isEqualTo(ScrollPane.ScrollBarPolicy.NEVER);
+
+                Dialog<Void> dialog = new Dialog<>();
+                ButtonType cancel = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+                ButtonType save = DialogSupport.primaryAction("Salvar");
+                dialog.getDialogPane().getButtonTypes().addAll(cancel, save);
+                dialog.getDialogPane().setContent(DialogSupport.content("Descrição curta",
+                        DialogSupport.section("Informações", null,
+                                DialogSupport.field("Nome", new javafx.scene.control.TextField(), true))));
+                DialogSupport.prepare(dialog, null, 620, 0);
+                assertThat(dialog.getDialogPane().getStyleClass()).contains("hestia-dialog");
+                assertThat(dialog.getDialogPane().getPrefWidth()).isEqualTo(620);
+                assertThat(dialog.getDialogPane().lookupButton(save).getStyleClass()).contains("primary-button");
+                assertThat(dialog.getDialogPane().lookupButton(cancel).getStyleClass()).contains("ghost-button");
                 checked.complete(null);
             } catch (Throwable error) {
                 checked.completeExceptionally(error);
