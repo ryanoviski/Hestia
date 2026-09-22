@@ -4,8 +4,9 @@
 <?import io.github.ryanoviski.hestia.presentation.components.MonthYearPicker?>
 <ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="io.github.ryanoviski.hestia.presentation.controllers.ReportsController"
-            fitToWidth="true" styleClass="view-scroll">
-    <VBox spacing="22" styleClass="view,content-constrained">
+            fitToWidth="true" hbarPolicy="NEVER" styleClass="view-scroll,page-viewport">
+    <StackPane alignment="TOP_CENTER">
+    <VBox fx:id="pageContent" spacing="22" styleClass="view,page-frame">
         <HBox alignment="CENTER_LEFT" spacing="12">
             <VBox spacing="4" HBox.hgrow="ALWAYS">
                 <Label text="Relatório mensal" styleClass="view-heading"/>
@@ -65,4 +66,5 @@
         </GridPane>
         <Label fx:id="feedback" wrapText="true"/>
     </VBox>
+    </StackPane>
 </ScrollPane>

@@ -3,8 +3,9 @@
 <?import javafx.scene.layout.*?>
 <ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="io.github.ryanoviski.hestia.presentation.controllers.SettingsController"
-            fitToWidth="true" styleClass="view-scroll">
-    <VBox spacing="20" styleClass="view,content-narrow">
+            fitToWidth="true" hbarPolicy="NEVER" styleClass="view-scroll,page-viewport">
+    <StackPane alignment="TOP_CENTER">
+    <VBox fx:id="pageContent" spacing="20" styleClass="view,page-frame,page-frame-narrow">
         <VBox spacing="4"><Label text="Configurações" styleClass="view-heading"/><Label text="Proteja seus dados e escolha como o Hestia cria cópias de segurança." styleClass="view-subtitle"/></VBox>
         <VBox spacing="14" styleClass="settings-section">
             <VBox spacing="3"><Label text="Dados e segurança" styleClass="section-title"/><Label text="O backup inclui o banco e todos os anexos verificados." styleClass="section-caption"/></VBox>
@@ -34,4 +35,5 @@
         </VBox>
         <HBox alignment="CENTER_LEFT" spacing="10"><ProgressIndicator fx:id="progress" visible="false" managed="false" prefWidth="24" prefHeight="24"/><Label fx:id="status" wrapText="true" styleClass="feedback-text"/></HBox>
     </VBox>
+    </StackPane>
 </ScrollPane>

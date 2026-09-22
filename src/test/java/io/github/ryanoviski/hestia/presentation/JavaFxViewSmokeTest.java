@@ -10,11 +10,20 @@ import io.github.ryanoviski.hestia.presentation.components.MonthYearPicker;
 import io.github.ryanoviski.hestia.presentation.components.ThemeManager;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Bounds;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
 import javafx.scene.control.Labeled;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -125,6 +134,99 @@ class JavaFxViewSmokeTest {
                             .map(Labeled.class::cast).filter(Labeled::isVisible).map(Labeled::getText))
                             .as(resource).doesNotContain("...");
                 }
+                checked.complete(null);
+            } catch (Throwable error) {
+                checked.completeExceptionally(error);
+            }
+        });
+        checked.get(20, TimeUnit.SECONDS);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"980,640", "1200,760", "1600,900"})
+    void centeredPagesUseTheAvailableViewport(double width, double height) throws Exception {
+        CompletableFuture<Void> checked = new CompletableFuture<>();
+        Platform.runLater(() -> {
+            try {
+                for (String resource : new String[]{"dashboard-view.fxml", "settings-view.fxml",
+                        "reports-view.fxml"}) {
+                    Parent shell = new FXMLLoader(getClass().getResource("/fxml/main-view.fxml")).load();
+                    Parent view = new FXMLLoader(getClass().getResource("/fxml/" + resource)).load();
+                    StackPane contentArea = (StackPane) shell.lookup("#contentArea");
+                    contentArea.getChildren().setAll(view);
+
+                    Scene scene = new Scene(shell, width, height);
+                    ThemeManager.apply(scene);
+                    shell.applyCss();
+                    shell.layout();
+
+                    Node pageContent = view.lookup("#pageContent");
+                    Node viewport = view.lookup(".viewport");
+                    Bounds viewportBounds = viewport.localToScene(viewport.getBoundsInLocal());
+                    Bounds pageBounds = pageContent.localToScene(pageContent.getBoundsInLocal());
+                    double leftSpace = pageBounds.getMinX() - viewportBounds.getMinX();
+                    double rightSpace = viewportBounds.getMaxX() - pageBounds.getMaxX();
+
+                    assertThat(Math.abs(leftSpace - rightSpace)).as(resource + " centered").isLessThan(1.5);
+                    assertThat(pageBounds.getWidth()).as(resource + " bounded width")
+                            .isLessThanOrEqualTo(resource.startsWith("settings") ? 820.5 : 1080.5);
+                }
+                checked.complete(null);
+            } catch (Throwable error) {
+                checked.completeExceptionally(error);
+            }
+        });
+        checked.get(20, TimeUnit.SECONDS);
+    }
+
+    @Test
+    void categoriesKeepTheirOwnScrollAndDoNotStretchTheSidebarOrForm() throws Exception {
+        CompletableFuture<Void> checked = new CompletableFuture<>();
+        Platform.runLater(() -> {
+            try {
+                Parent shell = new FXMLLoader(getClass().getResource("/fxml/main-view.fxml")).load();
+                Parent categories = new FXMLLoader(getClass().getResource("/fxml/categories-view.fxml")).load();
+                StackPane contentArea = (StackPane) shell.lookup("#contentArea");
+                contentArea.getChildren().setAll(categories);
+
+                Scene scene = new Scene(shell, 980, 640);
+                ThemeManager.apply(scene);
+                shell.applyCss();
+                shell.layout();
+
+                VBox list = (VBox) categories.lookup("#categoryList");
+                list.getChildren().clear();
+                for (int index = 1; index <= 60; index++) {
+                    Label row = new Label("Categoria de teste " + index);
+                    row.setMinHeight(34);
+                    list.getChildren().add(row);
+                }
+                shell.applyCss();
+                shell.layout();
+
+                ScrollPane scroll = (ScrollPane) categories.lookup("#categoryScroll");
+                VBox form = (VBox) categories.lookup("#categoryFormCard");
+                HBox workspace = (HBox) categories.lookup("#categoryWorkspace");
+                HBox selector = (HBox) categories.lookup("#categoryTypeSelector");
+                VBox navigation = (VBox) shell.lookup("#navigation");
+                Label preferences = (Label) shell.lookup("#preferencesSection");
+                Button categoryButton = navigation.getChildren().stream()
+                        .filter(Button.class::isInstance).map(Button.class::cast)
+                        .filter(button -> "categories".equals(button.getUserData())).findFirst().orElseThrow();
+
+                assertThat(scroll.getHeight()).isLessThan(list.getBoundsInLocal().getHeight());
+                assertThat(form.getHeight()).isLessThan(workspace.getHeight());
+                assertThat(form.localToScene(form.getBoundsInLocal()).getMinY())
+                        .isCloseTo(workspace.localToScene(workspace.getBoundsInLocal()).getMinY(),
+                                org.assertj.core.data.Offset.offset(1.0));
+                assertThat(selector.getWidth()).isLessThan(280);
+                assertThat(preferences.localToScene(preferences.getBoundsInLocal()).getMinY()
+                        - categoryButton.localToScene(categoryButton.getBoundsInLocal()).getMaxY()).isLessThan(45);
+                assertThat(navigation.getHeight()).isLessThanOrEqualTo(640);
+
+                Button firstNavButton = navigation.getChildren().stream()
+                        .filter(Button.class::isInstance).map(Button.class::cast).findFirst().orElseThrow();
+                assertThat(((Color) firstNavButton.getTextFill()).getBrightness()).isGreaterThan(0.75);
                 checked.complete(null);
             } catch (Throwable error) {
                 checked.completeExceptionally(error);

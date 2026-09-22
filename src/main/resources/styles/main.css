@@ -47,6 +47,9 @@
 .view { -fx-padding: 25 28 30 28; }
 .content-constrained { -fx-max-width: 1080; }
 .content-narrow { -fx-max-width: 820; }
+.page-shell, .page-viewport > .viewport { -fx-background-color: -hestia-canvas; }
+.page-frame { -fx-max-width: 1080; }
+.page-frame-narrow { -fx-max-width: 820; }
 .view-heading { -fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: -hestia-text; }
 .view-subtitle { -fx-font-size: 13px; -fx-text-fill: -hestia-text-secondary; }
 .section-title, .panel-title { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: -hestia-text; }
@@ -119,7 +122,7 @@
 .profile-color { -fx-min-width: 10; -fx-min-height: 38; -fx-background-radius: 5; }
 .category-color { -fx-min-width: 10; -fx-min-height: 38; -fx-background-color: -hestia-primary; -fx-background-radius: 5; }
 .count-pill { -fx-background-color: -hestia-primary-soft; -fx-text-fill: -hestia-primary-hover; -fx-padding: 5 9; -fx-background-radius: 10; -fx-font-size: 10px; -fx-font-weight: bold; }
-.segmented-control { -fx-background-color: #E8EEEC; -fx-background-radius: 8; -fx-padding: 3; -fx-max-width: 360; }
+.segmented-control { -fx-background-color: #E8EEEC; -fx-background-radius: 8; -fx-padding: 3; }
 .segment-button, .segmented-control > .toggle-button { -fx-background-color: transparent; -fx-text-fill: -hestia-text-secondary; -fx-padding: 8 18; -fx-background-radius: 6; -fx-cursor: hand; }
 .segment-selected, .segmented-control > .toggle-button:selected { -fx-background-color: -hestia-surface; -fx-text-fill: -hestia-text; -fx-font-weight: bold; }
 
@@ -164,6 +167,13 @@
 .compact-button { -fx-padding: 7 11; }
 .button:disabled { -fx-opacity: 0.48; -fx-cursor: default; }
 .menu-button.ghost-button > .label, .menu-button.secondary-button > .label { -fx-text-fill: -hestia-primary-hover; }
+
+/* Keep sidebar states legible after the generic button rules above. */
+.sidebar .nav-button { -fx-text-fill: #E4EFED; }
+.sidebar .nav-button:hover, .sidebar .nav-button:pressed { -fx-text-fill: #FFFFFF; }
+.sidebar .nav-button:focused { -fx-text-fill: #FFFFFF; }
+.sidebar .nav-button.nav-button-active { -fx-text-fill: #FFFFFF; }
+.sidebar .nav-button:disabled { -fx-text-fill: #B6CAC6; }
 
 /* Empty states and feedback */
 .empty-state { -fx-background-color: -hestia-surface; -fx-border-color: -hestia-border; -fx-border-radius: 9; -fx-background-radius: 9; -fx-padding: 21; -fx-text-fill: -hestia-text-secondary; }

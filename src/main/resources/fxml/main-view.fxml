@@ -5,7 +5,6 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
-<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
 <BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
@@ -29,13 +28,12 @@
             <Label text="ORGANIZAÇÃO" styleClass="nav-section" />
             <Button text="Perfis" userData="profiles" onAction="#navigate" styleClass="nav-button" />
             <Button text="Categorias" userData="categories" onAction="#navigate" styleClass="nav-button" />
-            <Region VBox.vgrow="ALWAYS" />
-            <Label text="PREFERÊNCIAS" styleClass="nav-section" />
+            <Label fx:id="preferencesSection" text="PREFERÊNCIAS" styleClass="nav-section" />
             <Button text="Configurações" userData="settings" onAction="#navigate" styleClass="nav-button" />
             <Label text="Dados armazenados somente neste computador" wrapText="true" styleClass="sidebar-footnote" />
         </VBox>
     </left>
     <center>
-        <StackPane fx:id="contentArea" styleClass="content-area" />
+        <StackPane fx:id="contentArea" minWidth="0" minHeight="0" styleClass="content-area" />
     </center>
 </BorderPane>
