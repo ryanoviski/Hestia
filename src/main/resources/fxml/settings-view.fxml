@@ -36,10 +36,13 @@
             <Label text="Seus dados não são enviados para serviços externos." styleClass="info-text"/>
         </VBox>
         <VBox alignment="CENTER_LEFT" spacing="9" styleClass="settings-section,about-section">
-            <ImageView fitWidth="190" preserveRatio="true" smooth="true"
-                       accessibleText="Logotipo do Hestia" styleClass="about-logo">
-                <image><Image url="@../images/branding/hestia-wordmark.png" /></image>
-            </ImageView>
+            <HBox alignment="CENTER_LEFT" spacing="13" styleClass="about-brand">
+                <ImageView fitWidth="64" fitHeight="64" preserveRatio="true" smooth="true"
+                           accessibleText="Símbolo do Hestia" styleClass="about-logo">
+                    <image><Image url="@../images/branding/hestia-symbol-64.png" /></image>
+                </ImageView>
+                <Label text="Hestia" styleClass="about-brand-name"/>
+            </HBox>
             <Label text="Gestão financeira pessoal e familiar" styleClass="setting-title"/>
             <Label text="Versão 0.1.0 — Em desenvolvimento" styleClass="section-caption"/>
         </VBox>

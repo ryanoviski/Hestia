@@ -215,6 +215,7 @@
 .data-path { -fx-background-color: -hestia-surface-subtle; -fx-text-fill: -hestia-text-secondary; -fx-padding: 9; -fx-background-radius: 7; -fx-font-family: "Consolas"; -fx-font-size: 10px; }
 .about-section { -fx-background-color: -hestia-primary-soft; -fx-border-color: #C9DDD8; }
 .about-logo { -fx-opacity: 0.98; }
+.about-brand-name { -fx-font-size: 30px; -fx-font-weight: bold; -fx-text-fill: -hestia-sidebar; }
 
 /* Reusable pickers and palette */
 .color-palette { -fx-padding: 2 0; }

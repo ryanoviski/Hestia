@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import javax.imageio.ImageIO;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -50,6 +51,19 @@ class ViewResourcesTest {
             try (var stream = resource.openStream()) {
                 assertThat(factory.newDocumentBuilder().parse(stream).getDocumentElement()).isNotNull();
             }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {16, 32, 48, 64, 128, 256})
+    void applicationIconMatchesItsDeclaredSize(int size) throws Exception {
+        String path = "/images/branding/hestia-symbol-" + size + ".png";
+        try (var stream = ViewResourcesTest.class.getResourceAsStream(path)) {
+            assertThat(stream).as(path).isNotNull();
+            var image = ImageIO.read(stream);
+            assertThat(image.getWidth()).isEqualTo(size);
+            assertThat(image.getHeight()).isEqualTo(size);
+            assertThat(image.getColorModel().hasAlpha()).isTrue();
         }
     }
 

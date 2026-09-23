@@ -15,6 +15,10 @@ import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 public final class HestiaApplication extends Application {
     private static final Logger LOGGER = LoggerFactory.getLogger(HestiaApplication.class);
     private ApplicationContext context;
@@ -35,7 +39,7 @@ public final class HestiaApplication extends Application {
             Scene scene = new Scene(root, 1200, 760);
             ThemeManager.apply(scene);
             stage.setTitle("Hestia — Gestão financeira familiar");
-            stage.getIcons().add(loadApplicationIcon());
+            stage.getIcons().addAll(loadApplicationIcons());
             stage.setMinWidth(980);
             stage.setMinHeight(640);
             stage.setScene(scene);
@@ -46,12 +50,17 @@ public final class HestiaApplication extends Application {
         }
     }
 
-    private Image loadApplicationIcon() throws java.io.IOException {
-        var resource = getClass().getResource("/images/branding/hestia-symbol.png");
-        if (resource == null) {
-            throw new java.io.IOException("Required application icon not found");
+    private List<Image> loadApplicationIcons() throws IOException {
+        List<Image> icons = new ArrayList<>();
+        for (int size : List.of(16, 32, 48, 64, 128, 256)) {
+            String path = "/images/branding/hestia-symbol-" + size + ".png";
+            var resource = getClass().getResource(path);
+            if (resource == null) {
+                throw new IOException("Required application icon not found: " + path);
+            }
+            icons.add(new Image(resource.toExternalForm()));
         }
-        return new Image(resource.toExternalForm());
+        return List.copyOf(icons);
     }
 
     private void showCriticalError() {

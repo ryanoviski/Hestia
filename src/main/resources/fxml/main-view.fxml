@@ -16,9 +16,9 @@
         <VBox fx:id="navigation" prefWidth="224" styleClass="sidebar">
             <HBox alignment="CENTER_LEFT" spacing="12" styleClass="brand">
                 <StackPane styleClass="brand-mark">
-                    <ImageView fitWidth="30" fitHeight="30" preserveRatio="true" smooth="true"
+                    <ImageView fitWidth="32" fitHeight="32" preserveRatio="true" smooth="true"
                                accessibleText="Símbolo do Hestia">
-                        <image><Image url="@../images/branding/hestia-symbol.png" /></image>
+                        <image><Image url="@../images/branding/hestia-symbol-32.png" /></image>
                     </ImageView>
                 </StackPane>
                 <Label text="Hestia" styleClass="brand-name" />
