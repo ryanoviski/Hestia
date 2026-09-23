@@ -6,7 +6,6 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.Control;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -70,10 +69,12 @@ public final class DialogSupport {
         return section;
     }
 
-    public static VBox field(String label, Control control, boolean required) {
+    public static VBox field(String label, Node control, boolean required) {
         Label title = new Label(label + (required ? " *" : ""));
         title.getStyleClass().add("field-label");
-        control.setMaxWidth(Double.MAX_VALUE);
+        if (control instanceof Region region) {
+            region.setMaxWidth(Double.MAX_VALUE);
+        }
         VBox field = new VBox(5, title, control);
         field.getStyleClass().add("form-field");
         HBox.setHgrow(field, Priority.ALWAYS);

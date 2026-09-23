@@ -31,10 +31,11 @@
 /* Shell and navigation */
 .app-shell, .content-area, .view-scroll, .view-scroll > .viewport { -fx-background-color: -hestia-canvas; }
 .sidebar { -fx-background-color: -hestia-sidebar; -fx-padding: 22 14 18 14; -fx-spacing: 3; }
-.brand { -fx-padding: 0 8 24 8; }
+.brand { -fx-padding: 0 8 10 8; }
 .brand-mark { -fx-background-color: #F1F7F5; -fx-background-radius: 12; -fx-min-width: 42; -fx-min-height: 42; -fx-pref-width: 42; -fx-pref-height: 42; }
 .brand-name { -fx-text-fill: #FFFFFF; -fx-font-size: 20px; -fx-font-weight: bold; }
 .nav-section { -fx-text-fill: #91B0AA; -fx-font-size: 9px; -fx-font-weight: bold; -fx-padding: 15 11 6 11; }
+.nav-section-first { -fx-padding: 7 11 6 11; }
 .nav-button { -fx-background-color: transparent; -fx-text-fill: #E4EFED; -fx-alignment: CENTER_LEFT; -fx-padding: 9 12; -fx-background-radius: 7; -fx-cursor: hand; -fx-max-width: Infinity; }
 .nav-button:hover { -fx-background-color: -hestia-sidebar-hover; -fx-text-fill: #FFFFFF; }
 .nav-button:focused { -fx-border-color: #7FA9A2; -fx-border-radius: 7; }
@@ -62,6 +63,19 @@
 .content-scroll, .content-scroll > .viewport, .profiles-scroll, .profiles-scroll > .viewport, .scroll-pane, .scroll-pane > .viewport {
     -fx-background-color: transparent; -fx-border-color: transparent;
 }
+.styled-scroll .scroll-bar:vertical { -fx-background-color: transparent; -fx-pref-width: 10; -fx-padding: 1; }
+.styled-scroll .scroll-bar:vertical .track { -fx-background-color: #E7EEEC; -fx-background-radius: 5; }
+.styled-scroll .scroll-bar:vertical .thumb {
+    -fx-background-color: rgba(44, 116, 108, 0.48); -fx-background-radius: 5; -fx-background-insets: 1;
+}
+.styled-scroll .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: -hestia-primary;
+    -fx-effect: dropshadow(gaussian, rgba(22, 60, 57, 0.24), 5, 0.15, 0, 0);
+}
+.styled-scroll .scroll-bar:vertical .increment-button,
+.styled-scroll .scroll-bar:vertical .decrement-button { -fx-background-color: transparent; -fx-padding: 0; }
+.styled-scroll .scroll-bar:vertical .increment-arrow,
+.styled-scroll .scroll-bar:vertical .decrement-arrow { -fx-background-color: transparent; -fx-padding: 0; }
 
 /* Dashboard and reports */
 .dashboard-hero, .report-hero { -fx-background-color: -hestia-surface; -fx-background-radius: 12; -fx-border-color: -hestia-border; -fx-border-radius: 12; -fx-padding: 24 20; }
@@ -218,7 +232,10 @@
 .about-brand-name { -fx-font-size: 30px; -fx-font-weight: bold; -fx-text-fill: -hestia-sidebar; }
 
 /* Reusable pickers and palette */
-.color-palette { -fx-padding: 2 0; }
+.color-palette {
+    -fx-padding: 9 10; -fx-background-color: -hestia-surface-subtle;
+    -fx-border-color: -hestia-border-strong; -fx-border-radius: 8; -fx-background-radius: 8;
+}
 .color-swatch { -fx-min-width: 29; -fx-pref-width: 29; -fx-max-width: 29; -fx-min-height: 29; -fx-pref-height: 29; -fx-max-height: 29; -fx-background-radius: 15; -fx-border-radius: 15; -fx-border-color: transparent; -fx-border-width: 3; -fx-cursor: hand; }
 .color-swatch:selected { -fx-border-color: #FFFFFF, -hestia-text; -fx-border-insets: 2, 0; }
 .color-swatch:focused { -fx-effect: dropshadow(gaussian, rgba(44,116,108,0.42), 6, 0, 0, 0); }

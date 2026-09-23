@@ -2,7 +2,6 @@ package io.github.ryanoviski.hestia.application.services;
 
 import io.github.ryanoviski.hestia.application.repositories.ProfileRepository;
 import io.github.ryanoviski.hestia.domain.enums.ProfileType;
-import io.github.ryanoviski.hestia.domain.exceptions.ActiveProfileLimitException;
 import io.github.ryanoviski.hestia.domain.exceptions.ValidationException;
 import io.github.ryanoviski.hestia.domain.models.Profile;
 
@@ -11,8 +10,6 @@ import java.util.Objects;
 import java.time.Instant;
 
 public final class ProfileService {
-    public static final int MAX_ACTIVE_PROFILES = 5;
-
     private final ProfileRepository repository;
 
     public ProfileService(ProfileRepository repository) {
@@ -26,9 +23,6 @@ public final class ProfileService {
     public Profile createProfile(String name, ProfileType type, String color) {
         String normalizedName = validateNameAndType(name, type);
         long householdId = repository.findDefaultHouseholdId();
-        if (repository.countActiveByHousehold(householdId) >= MAX_ACTIVE_PROFILES) {
-            throw new ActiveProfileLimitException();
-        }
         ensureUnique(householdId, normalizedName, null);
         String normalizedColor = normalizeColor(color);
         return repository.save(Profile.newProfile(householdId, normalizedName, type, normalizedColor));
@@ -53,9 +47,6 @@ public final class ProfileService {
     public void setActive(long profileId, boolean active) {
         long householdId = repository.findDefaultHouseholdId();
         Profile profile = ownedProfile(profileId, householdId);
-        if (active && !profile.active() && repository.countActiveByHousehold(householdId) >= MAX_ACTIVE_PROFILES) {
-            throw new ActiveProfileLimitException();
-        }
         repository.setActive(profileId, householdId, active);
     }
 

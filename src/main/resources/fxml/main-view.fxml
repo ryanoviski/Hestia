@@ -23,7 +23,7 @@
                 </StackPane>
                 <Label text="Hestia" styleClass="brand-name" />
             </HBox>
-            <Label text="FINANÇAS" styleClass="nav-section" />
+            <Label text="FINANÇAS" styleClass="nav-section,nav-section-first" />
             <Button text="Painel" userData="dashboard" onAction="#navigate" styleClass="nav-button" />
             <Button text="Movimentações" userData="transactions" onAction="#navigate" styleClass="nav-button" />
             <Button text="Contas a pagar" userData="bills" onAction="#navigate" styleClass="nav-button" />

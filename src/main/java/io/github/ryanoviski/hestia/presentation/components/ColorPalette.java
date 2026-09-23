@@ -13,17 +13,19 @@ import java.util.List;
 public final class ColorPalette extends FlowPane {
     public static final List<String> COLORS = List.of(
             "#2F7F77", "#3D8B7D", "#3F6FA0", "#6558A6", "#A85C8B",
-            "#C45E52", "#D17B32", "#C39A3B", "#68737D", "#4F7A55");
+            "#C45E52", "#D17B32", "#C39A3B", "#68737D", "#4F7A55",
+            "#2E8792", "#8B5E3C");
     private static final List<String> NAMES = List.of(
             "Verde-petróleo", "Verde suave", "Azul", "Violeta", "Rosa",
-            "Coral", "Laranja", "Dourado", "Cinza", "Verde-folha");
+            "Coral", "Laranja", "Dourado", "Cinza", "Verde-folha",
+            "Azul-petróleo", "Terracota");
 
     private final ToggleGroup group = new ToggleGroup();
     private final ObjectProperty<String> selectedColor = new SimpleObjectProperty<>();
 
     public ColorPalette() {
-        setHgap(8);
-        setVgap(8);
+        setHgap(9);
+        setVgap(9);
         setAlignment(Pos.CENTER_LEFT);
         getStyleClass().add("color-palette");
 

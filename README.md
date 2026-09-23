@@ -12,7 +12,7 @@ O projeto pretende reunir perfis individuais e compartilhados, receitas, despesa
 A etapa atual oferece:
 
 - janela desktop com painel mensal baseado em dados reais;
-- cadastro, listagem e desativação de até cinco perfis ativos;
+- cadastro, listagem, edição e desativação de perfis sem limite fixo de quantidade;
 - administração de categorias personalizadas, com edição, pesquisa e ativação;
 - cadastro e edição de receitas e despesas;
 - conclusão, reabertura e cancelamento de movimentações sem apagar o histórico;

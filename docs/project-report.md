@@ -171,13 +171,10 @@ Regras:
 - nomes são únicos no grupo, sem diferença entre maiúsculas e minúsculas;
 - tipo é obrigatório;
 - cor é opcional e validada no formato hexadecimal;
-- existem no máximo cinco perfis ativos por grupo;
-- reativar um perfil também respeita o limite de cinco;
+- não há limite fixo para a quantidade de perfis ativos no grupo;
 - o tipo de perfil em uso não pode ser alterado;
 - perfil referenciado por movimentações, compromissos ou anexos não pode ser excluído fisicamente e deve ser desativado;
 - perfil sem referências pode ser excluído após confirmação.
-
-O limite de cinco pertence à camada de serviço, não à estrutura física do banco. Portanto, é uma regra de produto que poderá ser alterada sem migração estrutural.
 
 ### 5.6 Categorias
 
@@ -598,7 +595,7 @@ A suíte cobre, entre outros pontos:
 - dados iniciais sem duplicação;
 - chaves estrangeiras e restrições;
 - criação, edição, desativação, reativação e exclusão segura de perfis e categorias;
-- limite de cinco perfis ativos;
+- criação de mais de cinco perfis ativos sem limitação artificial;
 - preferências de categoria padrão por grupo;
 - ciclo de vida de receitas e despesas;
 - detecção de vencimento;

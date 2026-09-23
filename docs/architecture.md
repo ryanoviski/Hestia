@@ -11,7 +11,7 @@ presentation → application → domain
 ```
 
 - **domain**: modelos, enums e exceções que representam conceitos centrais. Não depende de JavaFX nem SQLite.
-- **application**: serviços, validações e contratos usados pelos casos de uso. O limite de cinco perfis ativos vive nesta camada.
+- **application**: serviços, validações e contratos usados pelos casos de uso, incluindo nomes únicos e proteção do histórico de perfis.
 - **infrastructure**: conexões SQLite, execução de migrações e implementações de repositório.
 - **presentation**: telas FXML e controllers. Controllers coletam entrada, chamam serviços e apresentam resultados.
 - **config**: resolve os diretórios locais e compõe as dependências na inicialização.

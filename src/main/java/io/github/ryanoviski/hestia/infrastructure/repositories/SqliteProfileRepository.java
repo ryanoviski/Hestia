@@ -40,20 +40,6 @@ public final class SqliteProfileRepository implements ProfileRepository {
     }
 
     @Override
-    public long countActiveByHousehold(long householdId) {
-        try (var connection = connectionFactory.openConnection();
-             var statement = connection.prepareStatement(
-                     "SELECT COUNT(*) FROM profiles WHERE household_id = ? AND active = 1")) {
-            statement.setLong(1, householdId);
-            try (var result = statement.executeQuery()) {
-                return result.getLong(1);
-            }
-        } catch (SQLException exception) {
-            throw new DatabaseException("Could not count active profiles", exception);
-        }
-    }
-
-    @Override
     public Profile save(Profile profile) {
         String sql = """
                 INSERT INTO profiles(household_id, name, profile_type, color, active, created_at, updated_at)

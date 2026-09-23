@@ -224,7 +224,7 @@ class JavaFxViewSmokeTest {
     }
 
     @Test
-    void categoriesKeepTheirOwnScrollAndDoNotStretchTheSidebarOrForm() throws Exception {
+    void categoriesStayInsideTheirViewportAndUseASecondaryEditor() throws Exception {
         CompletableFuture<Void> checked = new CompletableFuture<>();
         Platform.runLater(() -> {
             try {
@@ -249,8 +249,7 @@ class JavaFxViewSmokeTest {
                 shell.layout();
 
                 ScrollPane scroll = (ScrollPane) categories.lookup("#categoryScroll");
-                VBox form = (VBox) categories.lookup("#categoryFormCard");
-                HBox workspace = (HBox) categories.lookup("#categoryWorkspace");
+                VBox workspace = (VBox) categories.lookup("#categoryWorkspace");
                 HBox selector = (HBox) categories.lookup("#categoryTypeSelector");
                 VBox navigation = (VBox) shell.lookup("#navigation");
                 Label preferences = (Label) shell.lookup("#preferencesSection");
@@ -259,10 +258,13 @@ class JavaFxViewSmokeTest {
                         .filter(button -> "categories".equals(button.getUserData())).findFirst().orElseThrow();
 
                 assertThat(scroll.getHeight()).isLessThan(list.getBoundsInLocal().getHeight());
-                assertThat(form.getHeight()).isLessThan(workspace.getHeight());
-                assertThat(form.localToScene(form.getBoundsInLocal()).getMinY())
-                        .isCloseTo(workspace.localToScene(workspace.getBoundsInLocal()).getMinY(),
-                                org.assertj.core.data.Offset.offset(1.0));
+                assertThat(scroll.localToScene(scroll.getBoundsInLocal()).getMaxY())
+                        .isLessThanOrEqualTo(contentArea.localToScene(contentArea.getBoundsInLocal()).getMaxY());
+                assertThat(workspace.getHeight()).isLessThan(categories.getBoundsInLocal().getHeight());
+                assertThat(scroll.getStyleClass()).contains("styled-scroll");
+                assertThat(categories.lookup("#categoryFormCard")).isNull();
+                assertThat(categories.lookupAll(".button").stream().filter(Button.class::isInstance)
+                        .map(Button.class::cast).map(Button::getText)).contains("Nova categoria");
                 assertThat(selector.getWidth()).isLessThan(280);
                 assertThat(preferences.localToScene(preferences.getBoundsInLocal()).getMinY()
                         - categoryButton.localToScene(categoryButton.getBoundsInLocal()).getMaxY()).isLessThan(45);

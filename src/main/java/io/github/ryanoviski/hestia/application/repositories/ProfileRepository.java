@@ -8,8 +8,6 @@ import java.util.Optional;
 public interface ProfileRepository {
     List<Profile> findAllByHousehold(long householdId);
 
-    long countActiveByHousehold(long householdId);
-
     Profile save(Profile profile);
 
     Profile update(Profile profile);

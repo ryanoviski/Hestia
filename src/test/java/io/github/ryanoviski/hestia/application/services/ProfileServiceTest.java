@@ -2,7 +2,6 @@ package io.github.ryanoviski.hestia.application.services;
 
 import io.github.ryanoviski.hestia.application.repositories.ProfileRepository;
 import io.github.ryanoviski.hestia.domain.enums.ProfileType;
-import io.github.ryanoviski.hestia.domain.exceptions.ActiveProfileLimitException;
 import io.github.ryanoviski.hestia.domain.exceptions.ValidationException;
 import io.github.ryanoviski.hestia.domain.models.Profile;
 import org.junit.jupiter.api.Test;
@@ -27,17 +26,14 @@ class ProfileServiceTest {
     }
 
     @Test
-    void preventsMoreThanFiveActiveProfiles() {
+    void allowsMoreThanFiveActiveProfiles() {
         InMemoryProfileRepository repository = new InMemoryProfileRepository();
         ProfileService service = new ProfileService(repository);
-        for (int index = 1; index <= ProfileService.MAX_ACTIVE_PROFILES; index++) {
+        for (int index = 1; index <= 12; index++) {
             service.createProfile("Perfil " + index, ProfileType.PERSON, null);
         }
 
-        assertThatThrownBy(() -> service.createProfile("Perfil 6", ProfileType.SHARED, null))
-                .isInstanceOf(ActiveProfileLimitException.class)
-                .hasMessageContaining("cinco perfis ativos");
-        assertThat(repository.profiles).hasSize(5);
+        assertThat(repository.profiles).hasSize(12).allMatch(Profile::active);
     }
 
     @Test
@@ -85,9 +81,6 @@ class ProfileServiceTest {
         private boolean referenced;
 
         @Override public List<Profile> findAllByHousehold(long householdId) { return List.copyOf(profiles); }
-        @Override public long countActiveByHousehold(long householdId) {
-            return profiles.stream().filter(Profile::active).count();
-        }
         @Override public Profile save(Profile profile) {
             Profile saved = new Profile((long) profiles.size() + 1, profile.householdId(), profile.name(),
                     profile.type(), profile.color(), profile.active(), profile.createdAt(), profile.updatedAt());

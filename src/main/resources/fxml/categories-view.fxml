@@ -1,48 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import io.github.ryanoviski.hestia.presentation.components.ColorPalette?>
 <StackPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="io.github.ryanoviski.hestia.presentation.controllers.CategoriesController"
            alignment="TOP_CENTER" minWidth="0" minHeight="0" styleClass="page-shell">
 <VBox fx:id="pageContent" minWidth="0" minHeight="0" spacing="18" styleClass="view,page-frame">
-    <VBox spacing="4">
-        <Label text="Categorias" styleClass="view-heading"/>
-        <Label text="Organize suas movimentações com nomes que façam sentido para sua rotina."
-               wrapText="true" styleClass="view-subtitle"/>
-    </VBox>
+    <HBox alignment="CENTER_LEFT" spacing="16">
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label text="Categorias" styleClass="view-heading"/>
+            <Label text="Organize suas movimentações com nomes que façam sentido para sua rotina."
+                   wrapText="true" styleClass="view-subtitle"/>
+        </VBox>
+        <Button text="Nova categoria" onAction="#createCategory" styleClass="primary-button"/>
+    </HBox>
     <HBox fx:id="categoryTypeSelector" spacing="0" maxWidth="-Infinity" styleClass="segmented-control">
         <Button fx:id="expenseTab" text="Despesas" onAction="#showExpenses" styleClass="segment-button,segment-selected"/>
         <Button fx:id="incomeTab" text="Receitas" onAction="#showIncome" styleClass="segment-button"/>
     </HBox>
-    <HBox fx:id="categoryWorkspace" minWidth="0" minHeight="0" spacing="18" VBox.vgrow="ALWAYS">
-        <VBox minWidth="0" minHeight="0" prefWidth="585" spacing="11" HBox.hgrow="ALWAYS">
-            <HBox alignment="CENTER_LEFT" spacing="9" styleClass="search-panel">
-                <TextField fx:id="searchField" promptText="Buscar categoria" HBox.hgrow="ALWAYS"/>
-                <CheckBox fx:id="includeInactive" text="Mostrar inativas"/>
-            </HBox>
-            <ScrollPane fx:id="categoryScroll" minHeight="0" fitToWidth="true" hbarPolicy="NEVER"
-                        VBox.vgrow="ALWAYS" styleClass="content-scroll">
-                <VBox fx:id="categoryList" spacing="8" styleClass="financial-list">
-                    <Label fx:id="emptyState" text="Nenhuma categoria encontrada neste grupo."
-                           styleClass="empty-state" wrapText="true"/>
-                </VBox>
-            </ScrollPane>
-        </VBox>
-        <VBox fx:id="categoryFormCard" minWidth="310" prefWidth="335" maxWidth="360" maxHeight="-Infinity"
-              spacing="12" styleClass="form-card">
-            <Label fx:id="formTitle" text="Nova categoria" styleClass="section-title"/>
-            <Label text="Crie uma identificação curta para seus lançamentos." wrapText="true" styleClass="field-hint"/>
-            <Label text="Nome" styleClass="field-label"/><TextField fx:id="nameField" promptText="Ex.: Pets"/>
-            <Label text="Tipo" styleClass="field-label"/><ComboBox fx:id="typeField" maxWidth="Infinity"/>
-            <Label text="Cor de identificação" styleClass="field-label"/><ColorPalette fx:id="colorPalette" maxWidth="Infinity"/>
-            <Label text="Categorias padrão podem ser personalizadas sem alterar a base do Hestia."
-                   wrapText="true" styleClass="field-hint"/>
-            <Label fx:id="formMessage" wrapText="true" styleClass="feedback-text"/>
-            <Button text="Salvar categoria" onAction="#saveCategory" maxWidth="Infinity" styleClass="primary-button"/>
-            <Button fx:id="cancelEditButton" text="Cancelar edição" onAction="#cancelEdit"
-                    visible="false" managed="false" maxWidth="Infinity" styleClass="ghost-button"/>
-        </VBox>
-    </HBox>
+    <VBox fx:id="categoryWorkspace" minWidth="0" minHeight="0" spacing="11" VBox.vgrow="ALWAYS">
+        <HBox alignment="CENTER_LEFT" spacing="9" styleClass="search-panel">
+            <TextField fx:id="searchField" promptText="Buscar categoria" HBox.hgrow="ALWAYS"/>
+            <CheckBox fx:id="includeInactive" text="Mostrar inativas"/>
+        </HBox>
+        <ScrollPane fx:id="categoryScroll" minHeight="0" maxHeight="Infinity" fitToWidth="true"
+                    hbarPolicy="NEVER" VBox.vgrow="ALWAYS" styleClass="content-scroll,styled-scroll">
+            <VBox fx:id="categoryList" spacing="8" styleClass="financial-list">
+                <Label fx:id="emptyState" text="Nenhuma categoria encontrada neste grupo."
+                       styleClass="empty-state" wrapText="true"/>
+            </VBox>
+        </ScrollPane>
+        <Label fx:id="formMessage" wrapText="true" styleClass="feedback-text"/>
+    </VBox>
 </VBox>
 </StackPane>

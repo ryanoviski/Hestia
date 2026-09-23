@@ -38,7 +38,7 @@ public final class HestiaApplication extends Application {
 
             Scene scene = new Scene(root, 1200, 760);
             ThemeManager.apply(scene);
-            stage.setTitle("Hestia — Gestão financeira familiar");
+            stage.setTitle("Hestia 0.1.0");
             stage.getIcons().addAll(loadApplicationIcons());
             stage.setMinWidth(980);
             stage.setMinHeight(640);

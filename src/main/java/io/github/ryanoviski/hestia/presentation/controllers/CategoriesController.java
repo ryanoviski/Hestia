@@ -7,6 +7,7 @@ import io.github.ryanoviski.hestia.domain.models.Category;
 import io.github.ryanoviski.hestia.presentation.components.ColorPalette;
 import io.github.ryanoviski.hestia.presentation.components.ComboBoxSupport;
 import io.github.ryanoviski.hestia.presentation.components.DialogSupport;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -25,22 +26,12 @@ public final class CategoriesController {
     @FXML private CheckBox includeInactive;
     @FXML private VBox categoryList;
     @FXML private Label emptyState;
-    @FXML private Label formTitle;
-    @FXML private TextField nameField;
-    @FXML private ComboBox<CategoryType> typeField;
-    @FXML private ColorPalette colorPalette;
     @FXML private Label formMessage;
-    @FXML private Button cancelEditButton;
 
     private CategoryService service;
-    private Category editing;
     private CategoryType selectedType = CategoryType.EXPENSE;
 
     @FXML private void initialize() {
-        ComboBoxSupport.configure(typeField, CategoryType::displayName);
-        typeField.getItems().setAll(CategoryType.values());
-        typeField.setValue(CategoryType.EXPENSE);
-        nameField.textProperty().addListener((observable, oldValue, newValue) -> nameField.getStyleClass().remove("field-invalid"));
         searchField.textProperty().addListener((o, oldValue, newValue) -> refresh());
         includeInactive.selectedProperty().addListener((o, oldValue, newValue) -> refresh());
     }
@@ -52,56 +43,89 @@ public final class CategoriesController {
 
     private void selectType(CategoryType type) {
         selectedType = type;
-        if (editing != null && editing.type() != type) cancelEdit();
         expenseTab.getStyleClass().remove("segment-selected");
         incomeTab.getStyleClass().remove("segment-selected");
         (type == CategoryType.EXPENSE ? expenseTab : incomeTab).getStyleClass().add("segment-selected");
-        if (editing == null) typeField.setValue(type);
         refresh();
     }
 
-    @FXML private void saveCategory() {
-        try {
-            boolean creating = editing == null;
-            if (creating) service.create(nameField.getText(), typeField.getValue(), colorPalette.getSelectedColor());
-            else service.update(editing.id(), nameField.getText(), typeField.getValue(), colorPalette.getSelectedColor());
-            cancelEdit();
-            showMessage(creating ? "Categoria criada com sucesso." : "Categoria atualizada com sucesso.", false);
-            refresh();
-        } catch (ValidationException exception) {
-            if (nameField.getText() == null || nameField.getText().isBlank()) {
-                if (!nameField.getStyleClass().contains("field-invalid")) nameField.getStyleClass().add("field-invalid");
-                nameField.requestFocus();
+    @FXML private void createCategory() { showCategoryDialog(null); }
+
+    private void edit(Category category) { showCategoryDialog(category); }
+
+    private void showCategoryDialog(Category category) {
+        boolean creating = category == null;
+        TextField nameField = new TextField(creating ? "" : category.name());
+        nameField.setPromptText("Ex.: Pets");
+        ComboBox<CategoryType> typeField = new ComboBox<>();
+        ComboBoxSupport.configure(typeField, CategoryType::displayName);
+        typeField.getItems().setAll(CategoryType.values());
+        typeField.setValue(creating ? selectedType : category.type());
+        typeField.setDisable(!creating && category.standard());
+        typeField.setMaxWidth(Double.MAX_VALUE);
+        ColorPalette colorPalette = new ColorPalette();
+        colorPalette.setSelectedColor(creating ? null : category.color());
+        colorPalette.setMaxWidth(Double.MAX_VALUE);
+        Label message = new Label();
+        message.setWrapText(true);
+        message.getStyleClass().add("feedback-text");
+        nameField.textProperty().addListener((observable, oldValue, newValue) ->
+                nameField.getStyleClass().remove("field-invalid"));
+
+        Label hint = new Label("Categorias padrão podem ser personalizadas sem alterar a base do Hestia.");
+        hint.setWrapText(true);
+        hint.getStyleClass().add("field-hint");
+        VBox fields = DialogSupport.section("Identificação",
+                "Use um nome curto e uma cor que facilitem a leitura dos lançamentos.",
+                DialogSupport.field("Nome", nameField, true),
+                DialogSupport.field("Tipo", typeField, true),
+                DialogSupport.field("Cor de identificação", colorPalette, false), hint, message);
+
+        Dialog<ButtonType> dialog = new Dialog<>();
+        String title = creating ? "Nova categoria" : "Editar categoria";
+        dialog.setTitle(title);
+        dialog.setHeaderText(title);
+        ButtonType saveType = DialogSupport.primaryAction(creating ? "Criar categoria" : "Salvar alterações");
+        ButtonType cancelType = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(cancelType, saveType);
+        dialog.getDialogPane().setContent(DialogSupport.content(
+                creating ? "Adicione uma categoria para organizar suas movimentações."
+                        : "Atualize os dados da categoria selecionada.", fields));
+        DialogSupport.prepare(dialog, categoryList, 540, 0);
+
+        boolean[] saved = {false};
+        CategoryType[] savedType = {typeField.getValue()};
+        dialog.getDialogPane().lookupButton(saveType).addEventFilter(ActionEvent.ACTION, event -> {
+            try {
+                if (creating) service.create(nameField.getText(), typeField.getValue(), colorPalette.getSelectedColor());
+                else service.update(category.id(), nameField.getText(), typeField.getValue(), colorPalette.getSelectedColor());
+                saved[0] = true;
+                savedType[0] = typeField.getValue();
+            } catch (ValidationException exception) {
+                event.consume();
+                if (nameField.getText() == null || nameField.getText().isBlank()) {
+                    if (!nameField.getStyleClass().contains("field-invalid")) nameField.getStyleClass().add("field-invalid");
+                    nameField.requestFocus();
+                }
+                dialogMessage(message, exception.getMessage());
+            } catch (RuntimeException exception) {
+                event.consume();
+                LOGGER.error("Could not save category", exception);
+                dialogMessage(message, "Não foi possível salvar a categoria.");
             }
-            showMessage(exception.getMessage(), true);
-        } catch (RuntimeException exception) {
-            LOGGER.error("Could not save category", exception);
-            showMessage("Não foi possível salvar a categoria.", true);
+        });
+        dialog.setOnShown(event -> nameField.requestFocus());
+        dialog.showAndWait();
+        if (saved[0]) {
+            selectType(savedType[0]);
+            showMessage(creating ? "Categoria criada com sucesso." : "Categoria atualizada com sucesso.", false);
         }
     }
 
-    @FXML private void cancelEdit() {
-        editing = null;
-        formTitle.setText("Nova categoria");
-        nameField.clear();
-        nameField.getStyleClass().remove("field-invalid");
-        colorPalette.setSelectedColor(null);
-        typeField.setDisable(false);
-        typeField.setValue(selectedType);
-        cancelEditButton.setVisible(false);
-        cancelEditButton.setManaged(false);
-    }
-
-    private void edit(Category category) {
-        editing = category;
-        formTitle.setText("Editar categoria");
-        nameField.setText(category.name());
-        typeField.setValue(category.type());
-        typeField.setDisable(category.standard());
-        colorPalette.setSelectedColor(category.color());
-        cancelEditButton.setVisible(true);
-        cancelEditButton.setManaged(true);
-        nameField.requestFocus();
+    private void dialogMessage(Label message, String text) {
+        message.setText(text);
+        message.getStyleClass().removeAll("form-error", "form-success");
+        message.getStyleClass().add("form-error");
     }
 
     private void refresh() {
@@ -169,7 +193,6 @@ public final class CategoriesController {
                 "Excluir categoria", true)) return;
         try {
             service.delete(category.id());
-            if (editing != null && editing.id().equals(category.id())) cancelEdit();
             showMessage("Categoria excluída.", false);
             refresh();
         } catch (ValidationException exception) {

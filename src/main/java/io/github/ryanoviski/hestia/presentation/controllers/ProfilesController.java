@@ -11,6 +11,7 @@ import io.github.ryanoviski.hestia.presentation.components.ColorPalette;
 import io.github.ryanoviski.hestia.presentation.components.ComboBoxSupport;
 import io.github.ryanoviski.hestia.presentation.components.DialogSupport;
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -27,28 +28,11 @@ public final class ProfilesController {
 
     @FXML private VBox profilesList;
     @FXML private VBox emptyState;
-    @FXML private Label formTitle;
     @FXML private Label formMessage;
-    @FXML private TextField nameField;
-    @FXML private ComboBox<ProfileType> typeField;
-    @FXML private ColorPalette colorPalette;
-    @FXML private Button saveButton;
-    @FXML private Button cancelEditButton;
-    @FXML private Label typeHelp;
     @FXML private Label profileCount;
 
     private ProfileService service;
     private ApplicationContext context;
-    private Profile editing;
-
-    @FXML private void initialize() {
-        ComboBoxSupport.configure(typeField, ProfileType::displayName);
-        typeField.getItems().setAll(ProfileType.values());
-        typeField.setValue(ProfileType.PERSON);
-        typeField.valueProperty().addListener((observable, oldValue, newValue) -> updateTypeHelp(newValue));
-        nameField.textProperty().addListener((observable, oldValue, newValue) -> nameField.getStyleClass().remove("field-invalid"));
-        updateTypeHelp(typeField.getValue());
-    }
 
     public void configure(ApplicationContext context) {
         this.context = context;
@@ -56,56 +40,89 @@ public final class ProfilesController {
         refresh();
     }
 
-    @FXML private void saveProfile() {
-        clearMessage();
-        try {
-            boolean creating = editing == null;
-            if (creating) service.createProfile(nameField.getText(), typeField.getValue(), colorPalette.getSelectedColor());
-            else service.updateProfile(editing.id(), nameField.getText(), typeField.getValue(), colorPalette.getSelectedColor());
-            cancelEdit();
+    @FXML private void createProfile() { showProfileDialog(null); }
+
+    private void edit(Profile profile) { showProfileDialog(profile); }
+
+    private void showProfileDialog(Profile profile) {
+        boolean creating = profile == null;
+        TextField nameField = new TextField(creating ? "" : profile.name());
+        nameField.setPromptText("Ex.: Ryan");
+        ComboBox<ProfileType> typeField = new ComboBox<>();
+        ComboBoxSupport.configure(typeField, ProfileType::displayName);
+        typeField.getItems().setAll(ProfileType.values());
+        typeField.setValue(creating ? ProfileType.PERSON : profile.type());
+        typeField.setMaxWidth(Double.MAX_VALUE);
+        Label typeHelp = new Label();
+        typeHelp.setWrapText(true);
+        typeHelp.getStyleClass().add("field-hint");
+        updateTypeHelp(typeHelp, typeField.getValue());
+        typeField.valueProperty().addListener((observable, oldValue, newValue) -> updateTypeHelp(typeHelp, newValue));
+        ColorPalette colorPalette = new ColorPalette();
+        colorPalette.setSelectedColor(creating ? null : profile.color());
+        colorPalette.setMaxWidth(Double.MAX_VALUE);
+        Label message = new Label();
+        message.setWrapText(true);
+        message.getStyleClass().add("feedback-text");
+        nameField.textProperty().addListener((observable, oldValue, newValue) ->
+                nameField.getStyleClass().remove("field-invalid"));
+
+        VBox fields = DialogSupport.section("Identificação",
+                "Defina como este perfil será reconhecido nos lançamentos.",
+                DialogSupport.field("Nome", nameField, true),
+                DialogSupport.field("Tipo", typeField, true), typeHelp,
+                DialogSupport.field("Cor de identificação", colorPalette, false), message);
+
+        Dialog<ButtonType> dialog = new Dialog<>();
+        String title = creating ? "Novo perfil" : "Editar perfil";
+        dialog.setTitle(title);
+        dialog.setHeaderText(title);
+        ButtonType saveType = DialogSupport.primaryAction(creating ? "Cadastrar perfil" : "Salvar alterações");
+        ButtonType cancelType = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialog.getDialogPane().getButtonTypes().addAll(cancelType, saveType);
+        dialog.getDialogPane().setContent(DialogSupport.content(
+                creating ? "Adicione uma pessoa ou um perfil compartilhado."
+                        : "Atualize os dados do perfil selecionado.", fields));
+        DialogSupport.prepare(dialog, profilesList, 540, 0);
+
+        boolean[] saved = {false};
+        dialog.getDialogPane().lookupButton(saveType).addEventFilter(ActionEvent.ACTION, event -> {
+            try {
+                if (creating) service.createProfile(nameField.getText(), typeField.getValue(), colorPalette.getSelectedColor());
+                else service.updateProfile(profile.id(), nameField.getText(), typeField.getValue(), colorPalette.getSelectedColor());
+                saved[0] = true;
+            } catch (ValidationException exception) {
+                event.consume();
+                if (nameField.getText() == null || nameField.getText().isBlank()) {
+                    if (!nameField.getStyleClass().contains("field-invalid")) nameField.getStyleClass().add("field-invalid");
+                    nameField.requestFocus();
+                }
+                dialogMessage(message, exception.getMessage());
+            } catch (RuntimeException exception) {
+                event.consume();
+                LOGGER.error("Could not save profile", exception);
+                dialogMessage(message, "Não foi possível salvar o perfil. Tente novamente.");
+            }
+        });
+        dialog.setOnShown(event -> nameField.requestFocus());
+        dialog.showAndWait();
+        if (saved[0]) {
             showMessage(creating ? "Perfil cadastrado com sucesso." : "Perfil atualizado com sucesso.", false);
             refresh();
-        } catch (ValidationException exception) {
-            if (nameField.getText() == null || nameField.getText().isBlank()) {
-                if (!nameField.getStyleClass().contains("field-invalid")) nameField.getStyleClass().add("field-invalid");
-                nameField.requestFocus();
-            }
-            showMessage(exception.getMessage(), true);
-        } catch (RuntimeException exception) {
-            LOGGER.error("Could not save profile", exception);
-            showMessage("Não foi possível salvar o perfil. Tente novamente.", true);
         }
     }
 
-    @FXML private void cancelEdit() {
-        editing = null;
-        formTitle.setText("Novo perfil");
-        saveButton.setText("Cadastrar perfil");
-        nameField.clear();
-        nameField.getStyleClass().remove("field-invalid");
-        typeField.setValue(ProfileType.PERSON);
-        colorPalette.setSelectedColor(null);
-        cancelEditButton.setVisible(false);
-        cancelEditButton.setManaged(false);
-    }
-
-    private void edit(Profile profile) {
-        editing = profile;
-        formTitle.setText("Editar perfil");
-        saveButton.setText("Salvar alterações");
-        nameField.setText(profile.name());
-        typeField.setValue(profile.type());
-        colorPalette.setSelectedColor(profile.color());
-        cancelEditButton.setVisible(true);
-        cancelEditButton.setManaged(true);
-        nameField.requestFocus();
+    private void dialogMessage(Label message, String text) {
+        message.setText(text == null ? "Não foi possível concluir a operação." : text);
+        message.getStyleClass().removeAll("form-error", "form-success");
+        message.getStyleClass().add("form-error");
     }
 
     private void refresh() {
         try {
             var profiles = service.listProfiles();
             long active = profiles.stream().filter(Profile::active).count();
-            profileCount.setText(active + " de " + ProfileService.MAX_ACTIVE_PROFILES + " ativos");
+            profileCount.setText(active == 1 ? "1 ativo" : active + " ativos");
             profilesList.getChildren().clear();
             profiles.forEach(profile -> profilesList.getChildren().add(createRow(profile)));
             emptyState.setVisible(profiles.isEmpty());
@@ -157,7 +174,7 @@ public final class ProfilesController {
         return item;
     }
 
-    private void updateTypeHelp(ProfileType type) {
+    private void updateTypeHelp(Label typeHelp, ProfileType type) {
         typeHelp.setText(type == ProfileType.SHARED
                 ? "Use para despesas e receitas da família, casal ou grupo."
                 : "Use para movimentações relacionadas a uma pessoa.");
@@ -182,7 +199,6 @@ public final class ProfilesController {
                 "Excluir perfil", true)) return;
         try {
             service.deleteProfile(profile.id());
-            if (editing != null && editing.id().equals(profile.id())) cancelEdit();
             showMessage("Perfil excluído.", false);
             refresh();
         } catch (ValidationException exception) {
@@ -257,11 +273,6 @@ public final class ProfilesController {
         dialog.getDialogPane().setContent(content);
         DialogSupport.prepare(dialog, profilesList, 700, 500);
         dialog.showAndWait();
-    }
-
-    private void clearMessage() {
-        formMessage.setText("");
-        formMessage.getStyleClass().removeAll("form-error", "form-success");
     }
 
     private void showMessage(String message, boolean error) {

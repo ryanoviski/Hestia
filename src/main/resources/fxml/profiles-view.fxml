@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import io.github.ryanoviski.hestia.presentation.components.ColorPalette?>
 <StackPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
            fx:controller="io.github.ryanoviski.hestia.presentation.controllers.ProfilesController"
            alignment="TOP_CENTER" minWidth="0" minHeight="0" styleClass="page-shell">
@@ -13,30 +12,19 @@
                    wrapText="true" styleClass="view-subtitle"/>
         </VBox>
         <Label fx:id="profileCount" styleClass="count-pill"/>
+        <Button text="Novo perfil" onAction="#createProfile" styleClass="primary-button"/>
     </HBox>
-    <HBox minWidth="0" minHeight="0" spacing="18" VBox.vgrow="ALWAYS">
-        <VBox minWidth="0" minHeight="0" prefWidth="585" spacing="10" HBox.hgrow="ALWAYS">
-            <ScrollPane minHeight="0" fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS" styleClass="content-scroll">
-                <VBox fx:id="profilesList" spacing="9" styleClass="financial-list">
-                    <VBox fx:id="emptyState" alignment="CENTER" spacing="7" styleClass="empty-state-large">
-                        <Label text="Nenhum perfil cadastrado" styleClass="empty-title"/>
-                        <Label text="Crie uma pessoa ou um perfil compartilhado para começar." wrapText="true" styleClass="empty-description"/>
-                    </VBox>
+    <VBox minWidth="0" minHeight="0" spacing="10" VBox.vgrow="ALWAYS">
+        <ScrollPane minHeight="0" maxHeight="Infinity" fitToWidth="true" hbarPolicy="NEVER"
+                    VBox.vgrow="ALWAYS" styleClass="content-scroll,styled-scroll">
+            <VBox fx:id="profilesList" spacing="9" styleClass="financial-list">
+                <VBox fx:id="emptyState" alignment="CENTER" spacing="7" styleClass="empty-state-large">
+                    <Label text="Nenhum perfil cadastrado" styleClass="empty-title"/>
+                    <Label text="Crie uma pessoa ou um perfil compartilhado para começar." wrapText="true" styleClass="empty-description"/>
                 </VBox>
-            </ScrollPane>
-        </VBox>
-        <VBox minWidth="310" prefWidth="335" maxWidth="360" maxHeight="-Infinity" spacing="12" styleClass="form-card">
-            <Label fx:id="formTitle" text="Novo perfil" styleClass="section-title"/>
-            <Label text="Identifique uma pessoa ou um perfil compartilhado." wrapText="true" styleClass="field-hint"/>
-            <Label text="Nome" styleClass="field-label"/><TextField fx:id="nameField" promptText="Ex.: Ryan"/>
-            <Label text="Tipo" styleClass="field-label"/><ComboBox fx:id="typeField" maxWidth="Infinity"/>
-            <Label fx:id="typeHelp" wrapText="true" styleClass="field-hint"/>
-            <Label text="Cor de identificação" styleClass="field-label"/><ColorPalette fx:id="colorPalette" maxWidth="Infinity"/>
-            <Label fx:id="formMessage" wrapText="true" styleClass="feedback-text"/>
-            <Button fx:id="saveButton" text="Cadastrar perfil" maxWidth="Infinity" onAction="#saveProfile" styleClass="primary-button"/>
-            <Button fx:id="cancelEditButton" text="Cancelar edição" maxWidth="Infinity" onAction="#cancelEdit"
-                    visible="false" managed="false" styleClass="ghost-button"/>
-        </VBox>
-    </HBox>
+            </VBox>
+        </ScrollPane>
+        <Label fx:id="formMessage" wrapText="true" styleClass="feedback-text"/>
+    </VBox>
 </VBox>
 </StackPane>
