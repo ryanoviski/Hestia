@@ -37,6 +37,8 @@ class ViewResourcesTest {
             "/fxml/reports-view.fxml",
             "/db/migrations/V004__create_attachments.sql",
             "/db/migrations/V005__create_category_preferences.sql",
+            "/images/branding/hestia-symbol.png",
+            "/images/branding/hestia-wordmark.png",
             "/styles/main.css"
     })
     void requiredResourceIsPackaged(String path) throws Exception {

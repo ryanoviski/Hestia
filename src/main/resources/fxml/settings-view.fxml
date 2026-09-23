@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.*?>
 <ScrollPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="io.github.ryanoviski.hestia.presentation.controllers.SettingsController"
@@ -32,6 +34,14 @@
             <Label text="Local utilizado pelo Hestia neste computador" styleClass="section-caption"/>
             <Label fx:id="localDataPath" wrapText="true" styleClass="data-path"/>
             <Label text="Seus dados não são enviados para serviços externos." styleClass="info-text"/>
+        </VBox>
+        <VBox alignment="CENTER_LEFT" spacing="9" styleClass="settings-section,about-section">
+            <ImageView fitWidth="190" preserveRatio="true" smooth="true"
+                       accessibleText="Logotipo do Hestia" styleClass="about-logo">
+                <image><Image url="@../images/branding/hestia-wordmark.png" /></image>
+            </ImageView>
+            <Label text="Gestão financeira pessoal e familiar" styleClass="setting-title"/>
+            <Label text="Versão 0.1.0 — Em desenvolvimento" styleClass="section-caption"/>
         </VBox>
         <HBox alignment="CENTER_LEFT" spacing="10"><ProgressIndicator fx:id="progress" visible="false" managed="false" prefWidth="24" prefHeight="24"/><Label fx:id="status" wrapText="true" styleClass="feedback-text"/></HBox>
     </VBox>

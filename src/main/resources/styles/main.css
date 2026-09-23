@@ -32,10 +32,8 @@
 .app-shell, .content-area, .view-scroll, .view-scroll > .viewport { -fx-background-color: -hestia-canvas; }
 .sidebar { -fx-background-color: -hestia-sidebar; -fx-padding: 22 14 18 14; -fx-spacing: 3; }
 .brand { -fx-padding: 0 8 24 8; }
-.brand-mark { -fx-background-color: #E7B96E; -fx-background-radius: 11; -fx-min-width: 40; -fx-min-height: 40; }
-.brand-letter { -fx-text-fill: #163C39; -fx-font-size: 20px; -fx-font-weight: bold; }
+.brand-mark { -fx-background-color: #F1F7F5; -fx-background-radius: 12; -fx-min-width: 42; -fx-min-height: 42; -fx-pref-width: 42; -fx-pref-height: 42; }
 .brand-name { -fx-text-fill: #FFFFFF; -fx-font-size: 20px; -fx-font-weight: bold; }
-.brand-caption { -fx-text-fill: #BCD1CD; -fx-font-size: 10px; }
 .nav-section { -fx-text-fill: #91B0AA; -fx-font-size: 9px; -fx-font-weight: bold; -fx-padding: 15 11 6 11; }
 .nav-button { -fx-background-color: transparent; -fx-text-fill: #E4EFED; -fx-alignment: CENTER_LEFT; -fx-padding: 9 12; -fx-background-radius: 7; -fx-cursor: hand; -fx-max-width: Infinity; }
 .nav-button:hover { -fx-background-color: -hestia-sidebar-hover; -fx-text-fill: #FFFFFF; }
@@ -215,6 +213,8 @@
 .settings-section { -fx-padding: 19; }
 .settings-row { -fx-padding: 11 0; -fx-border-color: transparent transparent -hestia-border transparent; }
 .data-path { -fx-background-color: -hestia-surface-subtle; -fx-text-fill: -hestia-text-secondary; -fx-padding: 9; -fx-background-radius: 7; -fx-font-family: "Consolas"; -fx-font-size: 10px; }
+.about-section { -fx-background-color: -hestia-primary-soft; -fx-border-color: #C9DDD8; }
+.about-logo { -fx-opacity: 0.98; }
 
 /* Reusable pickers and palette */
 .color-palette { -fx-padding: 2 0; }

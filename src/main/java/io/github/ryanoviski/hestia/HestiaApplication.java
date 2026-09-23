@@ -10,6 +10,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,7 @@ public final class HestiaApplication extends Application {
             Scene scene = new Scene(root, 1200, 760);
             ThemeManager.apply(scene);
             stage.setTitle("Hestia — Gestão financeira familiar");
+            stage.getIcons().add(loadApplicationIcon());
             stage.setMinWidth(980);
             stage.setMinHeight(640);
             stage.setScene(scene);
@@ -42,6 +44,14 @@ public final class HestiaApplication extends Application {
             LOGGER.error("Critical error while starting Hestia", exception);
             showCriticalError();
         }
+    }
+
+    private Image loadApplicationIcon() throws java.io.IOException {
+        var resource = getClass().getResource("/images/branding/hestia-symbol.png");
+        if (resource == null) {
+            throw new java.io.IOException("Required application icon not found");
+        }
+        return new Image(resource.toExternalForm());
     }
 
     private void showCriticalError() {
