@@ -2,6 +2,7 @@ package io.github.ryanoviski.hestia.presentation.controllers;
 
 import io.github.ryanoviski.hestia.application.services.BackupPreferencesService;
 import io.github.ryanoviski.hestia.config.ApplicationContext;
+import io.github.ryanoviski.hestia.config.ApplicationInfo;
 import io.github.ryanoviski.hestia.config.ApplicationPaths;
 import io.github.ryanoviski.hestia.presentation.components.DialogSupport;
 import javafx.application.Platform;
@@ -21,6 +22,7 @@ public final class SettingsController {
     @FXML private Label status;
     @FXML private ProgressIndicator progress;
     @FXML private Label localDataPath;
+    @FXML private Label applicationVersion;
     private ApplicationContext context;
 
     public void configure(ApplicationContext context) {
@@ -32,6 +34,7 @@ public final class SettingsController {
         retention.getValueFactory().setValue(settings.retention());
         status.setText("Último backup: " + (settings.lastBackup() == null ? "nunca" : settings.lastBackup()) + " · " + settings.lastResult());
         localDataPath.setText(ApplicationPaths.resolve().root().toString());
+        applicationVersion.setText("Versão " + ApplicationInfo.VERSION);
     }
 
     @FXML private void chooseDirectory() {

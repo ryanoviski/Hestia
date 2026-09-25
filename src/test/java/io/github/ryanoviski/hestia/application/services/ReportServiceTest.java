@@ -99,6 +99,22 @@ class ReportServiceTest {
         }
     }
 
+    @Test void exportsPdfSafelyWhenUserLabelsContainUnsupportedUnicode() throws Exception {
+        var profile = profiles.createProfile("Ana 🏠", ProfileType.PERSON, null);
+        var category = categories.create("Casa 🏡", CategoryType.EXPENSE, null);
+        create(TransactionType.EXPENSE, "Reparo", "150", profile.id(), category.id(),
+                LocalDate.of(2026, 9, 10), TransactionStatus.SETTLED);
+
+        Path file = new ReportPdfService().export(reports.monthly(YearMonth.of(2026, 9)),
+                directory.resolve("unicode.pdf"));
+
+        assertThat(file).exists();
+        try (var document = Loader.loadPDF(file.toFile())) {
+            String text = new PDFTextStripper().getText(document);
+            assertThat(text).contains("Ana", "Casa", "150,00");
+        }
+    }
+
     private io.github.ryanoviski.hestia.domain.models.Transaction create(
             TransactionType type, String description, String amount, long profileId, long categoryId,
             LocalDate date, TransactionStatus status) {

@@ -63,6 +63,19 @@ class DatabaseInitializerTest {
                 .hasMessageContaining("FOREIGN KEY");
     }
 
+    @Test
+    void newlyInitializedDatabasePassesSqliteIntegrityChecks() throws Exception {
+        ConnectionFactory factory = initializedFactory();
+        try (var connection = factory.openConnection();
+             var integrity = connection.createStatement().executeQuery("PRAGMA integrity_check")) {
+            assertThat(integrity.getString(1)).isEqualTo("ok");
+        }
+        try (var connection = factory.openConnection();
+             var foreignKeys = connection.createStatement().executeQuery("PRAGMA foreign_key_check")) {
+            assertThat(foreignKeys.next()).isFalse();
+        }
+    }
+
     private ConnectionFactory initializedFactory() throws Exception {
         Path database = temporaryDirectory.resolve("db").resolve("hestia.db");
         Files.createDirectories(database.getParent());

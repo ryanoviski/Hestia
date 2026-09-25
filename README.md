@@ -55,6 +55,16 @@ mvn javafx:run
 
 Na primeira abertura, o Hestia cria automaticamente seus diretórios, banco e categorias iniciais.
 
+Também é possível gerar e executar o JAR autocontido:
+
+```shell
+mvn clean package
+java --enable-native-access=ALL-UNNAMED -jar target/hestia-0.1.0-SNAPSHOT-executable.jar
+```
+
+O JAR inclui as dependências da aplicação, mas ainda exige um JDK 21 ou mais recente instalado. Um
+instalador nativo do Windows com runtime próprio ainda não faz parte desta versão.
+
 ## Fluxos disponíveis
 
 Antes de cadastrar uma movimentação, crie ao menos um perfil em **Perfis**. Categorias padrão já estão disponíveis; categorias próprias podem ser criadas em **Categorias**, escolhendo o tipo Receita ou Despesa.
@@ -190,4 +200,5 @@ recorte mensal, mas ainda não oferecem séries históricas anuais ou formatos a
 
 ## Licença
 
-Distribuído sob a licença MIT. Consulte [LICENSE](LICENSE).
+Distribuído sob a licença MIT. Consulte [LICENSE](LICENSE). As bibliotecas incluídas e suas licenças
+estão relacionadas em [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

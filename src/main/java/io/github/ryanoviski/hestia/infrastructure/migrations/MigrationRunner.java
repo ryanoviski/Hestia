@@ -32,6 +32,7 @@ public final class MigrationRunner {
         try (Connection connection = connectionFactory.openConnection()) {
             createHistoryTable(connection);
             Set<Integer> appliedVersions = appliedVersions(connection);
+            rejectUnsupportedVersions(appliedVersions);
             for (Migration migration : MIGRATIONS) {
                 if (!appliedVersions.contains(migration.version())) {
                     apply(connection, migration);
@@ -39,6 +40,18 @@ public final class MigrationRunner {
             }
         } catch (SQLException exception) {
             throw new DatabaseException("Could not execute database migrations", exception);
+        }
+    }
+
+    private void rejectUnsupportedVersions(Set<Integer> appliedVersions) {
+        Set<Integer> supportedVersions = new HashSet<>();
+        MIGRATIONS.forEach(migration -> supportedVersions.add(migration.version()));
+        Set<Integer> unsupportedVersions = new HashSet<>(appliedVersions);
+        unsupportedVersions.removeAll(supportedVersions);
+        if (!unsupportedVersions.isEmpty()) {
+            throw new DatabaseException(
+                    "Database schema contains unsupported migration versions: " + unsupportedVersions,
+                    new IllegalStateException("The database was created by a newer or incompatible Hestia version"));
         }
     }
 

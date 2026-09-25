@@ -8,6 +8,7 @@ import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 
 import java.io.IOException;
@@ -23,9 +24,6 @@ public final class ReportPdfService {
     private static final DateTimeFormatter PERIOD = DateTimeFormatter.ofPattern("MMMM 'de' yyyy", PT_BR);
     private static final DateTimeFormatter GENERATED = DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm", PT_BR)
             .withZone(ZoneId.systemDefault());
-    private static final PDType1Font REGULAR = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
-    private static final PDType1Font BOLD = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
-
     public Path export(MonthlyReport report, Path destination) {
         if (report == null) throw new ValidationException("Não há relatório para exportar.");
         if (destination == null) throw new ValidationException("Escolha onde salvar o relatório.");
@@ -67,7 +65,7 @@ public final class ReportPdfService {
                 document.save(file.toFile());
             }
             return file;
-        } catch (IOException exception) {
+        } catch (IOException | IllegalArgumentException exception) {
             throw new ValidationException("Não foi possível gerar o PDF do relatório.");
         }
     }
@@ -82,6 +80,8 @@ public final class ReportPdfService {
 
     private static final class Writer implements AutoCloseable {
         private final PDDocument document;
+        private final PDFont regular = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+        private final PDFont bold = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
         private PDPageContentStream stream;
         private float y;
 
@@ -155,12 +155,28 @@ public final class ReportPdfService {
         }
 
         private void textAt(String value, float x, float atY, float size, boolean bold) throws IOException {
+            PDFont font = bold ? this.bold : regular;
             stream.beginText();
-            stream.setFont(bold ? BOLD : REGULAR, size);
+            stream.setFont(font, size);
             stream.setNonStrokingColor(35 / 255f, 52 / 255f, 48 / 255f);
             stream.newLineAtOffset(x, atY);
-            stream.showText(value == null ? "" : value);
+            stream.showText(supportedText(value, font));
             stream.endText();
+        }
+
+        private String supportedText(String value, PDFont font) {
+            if (value == null) return "";
+            StringBuilder supported = new StringBuilder(value.length());
+            value.codePoints().forEach(codePoint -> {
+                String character = new String(Character.toChars(codePoint));
+                try {
+                    font.encode(character);
+                    supported.append(character);
+                } catch (IOException | IllegalArgumentException unsupported) {
+                    supported.append('?');
+                }
+            });
+            return supported.toString();
         }
 
         @Override public void close() throws IOException {

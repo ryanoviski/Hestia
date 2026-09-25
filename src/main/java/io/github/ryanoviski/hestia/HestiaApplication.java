@@ -2,6 +2,7 @@ package io.github.ryanoviski.hestia;
 
 import io.github.ryanoviski.hestia.config.ApplicationBootstrap;
 import io.github.ryanoviski.hestia.config.ApplicationContext;
+import io.github.ryanoviski.hestia.config.ApplicationInfo;
 import io.github.ryanoviski.hestia.presentation.controllers.MainController;
 import io.github.ryanoviski.hestia.presentation.components.ThemeManager;
 import javafx.application.Application;
@@ -38,7 +39,7 @@ public final class HestiaApplication extends Application {
 
             Scene scene = new Scene(root, 1200, 760);
             ThemeManager.apply(scene);
-            stage.setTitle("Hestia 0.1.0");
+            stage.setTitle(ApplicationInfo.displayName());
             stage.getIcons().addAll(loadApplicationIcons());
             stage.setMinWidth(980);
             stage.setMinHeight(640);
