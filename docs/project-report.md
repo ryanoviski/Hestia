@@ -1,5 +1,9 @@
 # Relatório completo do projeto Hestia
 
+> **Documento histórico.** Este relatório registra o estado do projeto em 21 de setembro de 2026,
+> quando a versão ainda era `0.1.0-SNAPSHOT`. Para o estado da versão pública `1.0.0`, consulte
+> [release-report.md](release-report.md).
+
 **Data do levantamento:** 21 de setembro de 2026  
 **Versão do projeto:** `0.1.0-SNAPSHOT`  
 **Estado analisado:** código da branch atual, commit-base `5b62575`  

@@ -1,5 +1,9 @@
 # Auditoria pré-release — Hestia
 
+> **Documento histórico.** Esta auditoria registra a situação anterior ao empacotamento nativo.
+> Os bloqueadores resolvidos e as evidências finais da versão `1.0.0` estão em
+> [release-report.md](release-report.md).
+
 Data: 24 de setembro de 2026  
 Revisão-base: `69911f3e7a5c69849694a54ad28590fe5ad88d25` (`main`)  
 Versão auditada: `0.1.0-SNAPSHOT`

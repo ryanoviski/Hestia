@@ -2,8 +2,7 @@
 
 Sistema desktop de gestão financeira pessoal e familiar para organizar receitas, despesas e compromissos mensais em um ambiente simples, acolhedor e privado.
 
-> O Hestia está em desenvolvimento. Esta versão oferece movimentações, compromissos mensais,
-> compras parceladas e anexos locais, mas ainda não deve ser usada como registro financeiro definitivo.
+> O Hestia 1.0.0 é a candidata à primeira versão pública. Mantenha backups periódicos dos seus dados financeiros.
 
 ## Objetivo e escopo
 
@@ -45,6 +44,8 @@ Contas bancárias, carteiras, saldo bancário, cartões de crédito, faturas, li
 - JDK 21 ou mais recente;
 - Maven 3.9 ou mais recente disponível no `PATH`.
 
+Usuários do instalador Windows não precisam instalar Java, Maven ou estas ferramentas de desenvolvimento.
+
 ## Executar
 
 Na raiz do projeto:
@@ -59,11 +60,26 @@ Também é possível gerar e executar o JAR autocontido:
 
 ```shell
 mvn clean package
-java --enable-native-access=ALL-UNNAMED -jar target/hestia-0.1.0-SNAPSHOT-executable.jar
+java --enable-native-access=ALL-UNNAMED -jar target/hestia-1.0.0-executable.jar
 ```
 
-O JAR inclui as dependências da aplicação, mas ainda exige um JDK 21 ou mais recente instalado. Um
-instalador nativo do Windows com runtime próprio ainda não faz parte desta versão.
+O JAR inclui as dependências da aplicação, mas exige um JDK 21 ou mais recente. Para usuários finais no
+Windows, o instalador gerado por `scripts/build-release.ps1` inclui o runtime Java e não exige Java,
+Maven ou IntelliJ instalados.
+
+## Gerar a release Windows
+
+Em PowerShell, com Maven disponível:
+
+```powershell
+.\scripts\build-release.ps1 -PackageType exe
+```
+
+O script verifica a versão, executa o build, baixa e confere ferramentas oficiais, cria um runtime Java
+21 reduzido e gera `release/Hestia-1.0.0-Setup.exe` e `release/SHA256SUMS.txt`. Consulte
+[docs/windows-release.md](docs/windows-release.md) para instalação, testes, assinatura e publicação. As
+evidências e pendências da candidata atual estão consolidadas em
+[docs/release-report.md](docs/release-report.md).
 
 ## Fluxos disponíveis
 
@@ -197,6 +213,11 @@ Ainda não há OCR, importação automática de documentos, autenticação,
 sincronização, compartilhamento ou notificações do sistema. As recorrências desta versão são exclusivamente
 mensais e de despesas; parcelamentos também são somente de despesas. Relatórios possuem um primeiro
 recorte mensal, mas ainda não oferecem séries históricas anuais ou formatos adicionais de exportação.
+
+## Versionamento
+
+O Hestia usa `MAJOR.MINOR.PATCH`: correções compatíveis incrementam PATCH (`1.0.1`), funcionalidades
+compatíveis incrementam MINOR (`1.1.0`) e mudanças incompatíveis incrementam MAJOR (`2.0.0`).
 
 ## Licença
 

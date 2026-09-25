@@ -1,6 +1,8 @@
 # Build
 target/
 .m2/
+release/
+.release-tools/
 *.class
 
 # IDEs

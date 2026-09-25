@@ -6,7 +6,7 @@
 
     <groupId>io.github.ryanoviski</groupId>
     <artifactId>hestia</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>Hestia</name>
     <description>Desktop personal and family finance manager</description>
 
@@ -20,7 +20,7 @@
         <slf4j.version>2.0.17</slf4j.version>
         <pdfbox.version>3.0.8</pdfbox.version>
         <zip4j.version>2.11.6</zip4j.version>
-        <jackson.version>2.22.0</jackson.version>
+        <jackson.version>2.22.1</jackson.version>
     </properties>
 
     <dependencies>
@@ -52,7 +52,7 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.5.18</version>
+            <version>1.5.34</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
@@ -84,7 +84,7 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>3.27.3</version>
+            <version>3.27.7</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

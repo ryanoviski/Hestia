@@ -8,7 +8,7 @@ class ApplicationInfoTest {
     @Test
     void exposesTheVersionDefinedByMaven() {
         assertThat(ApplicationInfo.NAME).isEqualTo("Hestia");
-        assertThat(ApplicationInfo.VERSION).isEqualTo("0.1.0-SNAPSHOT");
-        assertThat(ApplicationInfo.displayName()).isEqualTo("Hestia 0.1.0-SNAPSHOT");
+        assertThat(ApplicationInfo.VERSION).isEqualTo("1.0.0");
+        assertThat(ApplicationInfo.displayName()).isEqualTo("Hestia 1.0.0");
     }
 }
