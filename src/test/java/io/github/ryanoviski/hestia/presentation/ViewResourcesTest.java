@@ -88,4 +88,15 @@ class ViewResourcesTest {
                     .contains("promptText=\"Todas as origens\"");
         }
     }
+
+    @Test
+    void dashboardProvidesAccessToAllUpcomingBills() throws Exception {
+        try (var stream = ViewResourcesTest.class.getResourceAsStream("/fxml/dashboard-view.fxml")) {
+            assertThat(stream).isNotNull();
+            String fxml = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            assertThat(fxml).contains("text=\"Ver todas\"")
+                    .contains("onAction=\"#showAllUpcoming\"")
+                    .doesNotContain("upcoming-scroll");
+        }
+    }
 }

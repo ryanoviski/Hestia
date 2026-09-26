@@ -34,8 +34,10 @@ sucesso. Nenhum commit, push, release remota ou publicação foi realizado nesta
 - script separado para futura assinatura Authenticode;
 - documentação de build, instalação, atualização, dados, assinatura e homologação;
 - geração de hash SHA-256 e inclusão de licença e avisos de terceiros.
+- acesso direto de “Próximos vencimentos” para a visão completa de Contas a pagar.
 
-Não houve mudança de regra financeira, schema, migration ou formato de dados.
+O artefato reconstruído também incorpora as melhorias financeiras e de UI/UX implementadas após a
+preparação inicial. Não houve nova migration nem mudança incompatível no formato de dados.
 
 ## 4. Runtime incluído
 
@@ -63,7 +65,7 @@ O usuário final não precisa instalar Java, Maven ou IntelliJ.
 | Tecnologia | Maven + `jlink` + `jpackage` + WiX 3.14.1 |
 | Formato | EXE x64 |
 | Arquivo | `release/Hestia-1.0.0-Setup.exe` |
-| Tamanho | 97.871.360 bytes |
+| Tamanho | 97.891.840 bytes |
 | Versão do produto | 1.0.0 |
 | Fabricante | Ryan |
 | Runtime incluso | Sim |
@@ -130,7 +132,7 @@ de desinstalação. O diretório de dados foi preservado, permitindo que a reins
 nativas JavaFX. Permanecem pendentes a revisão visual em 980×640, 1200×760 e 1920×1080, escalas de DPI,
 navegação por teclado e fluxo completo por uma pessoa usuária.
 
-Como cobertura automatizada, passaram 22 smoke tests JavaFX e 26 testes de recursos/FXML. Isso confirma
+Como cobertura automatizada, passaram 22 smoke tests JavaFX e 27 testes de recursos/FXML. Isso confirma
 carregamento técnico, mas não substitui homologação visual.
 
 ## 12. Vulnerabilidades
@@ -157,7 +159,7 @@ certificadora. Chaves privadas, PFX e senhas não devem ser versionados.
 SHA-256 do instalador final:
 
 ```text
-36AF646B56B23C60CF1298FEA6C9FEABB2E63E9107FE7B4E5B17C9E0C400BC44
+0DB932BD8337DFEBEAD61B42A26B8D504F3CA1FE3F029B651C5B262CF9072CED
 ```
 
 O valor está em `release/SHA256SUMS.txt`. Uma assinatura futura altera o arquivo e exige recalcular e
@@ -173,21 +175,21 @@ jurídico.
 
 `mvn clean test`:
 
-- total: 131;
-- aprovados: 131;
+- total: 146;
+- aprovados: 146;
 - falhas: 0;
 - erros: 0;
 - ignorados: 0;
 - resultado: `BUILD SUCCESS`;
-- duração registrada: 13,118 s.
+- duração registrada na reconstrução: 16,256 s.
 
 ## 17. Build final
 
 O build final foi executado pelo script de release, que chama `mvn clean package`. Resultado:
 
-- 131 testes aprovados;
+- 146 testes aprovados;
 - `BUILD SUCCESS`;
-- duração Maven registrada: 13,863 s;
+- duração Maven registrada: 16,256 s;
 - JAR executável usado como entrada: `hestia-1.0.0-executable.jar`;
 - instalador e hash gerados com sucesso.
 

@@ -37,11 +37,17 @@ public final class DashboardController {
     @FXML private VBox categoryTotals;
     @FXML private VBox categoryEmpty;
     private DashboardService service;
+    private Runnable showAllUpcoming;
 
-    public void configure(DashboardService service) {
+    public void configure(DashboardService service, Runnable showAllUpcoming) {
         this.service = service;
+        this.showAllUpcoming = showAllUpcoming;
         monthPicker.setValue(YearMonth.now());
         refresh();
+    }
+
+    @FXML private void showAllUpcoming() {
+        if (showAllUpcoming != null) showAllUpcoming.run();
     }
 
     @FXML private void previousMonth() { monthPicker.setValue(monthPicker.getValue().minusMonths(1)); refresh(); }

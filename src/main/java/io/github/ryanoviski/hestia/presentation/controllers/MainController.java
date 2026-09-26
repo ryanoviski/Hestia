@@ -47,7 +47,10 @@ public final class MainController {
     private void showDashboard() {
         loadContent("/fxml/dashboard-view.fxml", loader -> {
             DashboardController controller = loader.getController();
-            controller.configure(context.dashboardService());
+            controller.configure(context.dashboardService(), () -> {
+                showTransactions(TransactionType.EXPENSE, true);
+                selectByDestination("bills");
+            });
         });
         selectByDestination("dashboard");
     }

@@ -44,7 +44,11 @@
         <GridPane hgap="14" vgap="14">
             <columnConstraints><ColumnConstraints percentWidth="58"/><ColumnConstraints percentWidth="42"/></columnConstraints>
             <VBox GridPane.columnIndex="0" spacing="13" styleClass="panel">
-                <Label text="Próximos vencimentos" styleClass="section-title"/>
+                <HBox alignment="CENTER_LEFT">
+                    <Label text="Próximos vencimentos" styleClass="section-title"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="Ver todas" onAction="#showAllUpcoming" styleClass="text-button"/>
+                </HBox>
                 <Label text="O que precisa da sua atenção nos próximos dias." styleClass="section-caption"/>
                 <VBox fx:id="upcomingList" spacing="7"/>
                 <VBox fx:id="upcomingEmpty" alignment="CENTER" spacing="5" styleClass="inline-empty">
