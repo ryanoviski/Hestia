@@ -19,6 +19,8 @@ import io.github.ryanoviski.hestia.presentation.components.ComboBoxSupport;
 import io.github.ryanoviski.hestia.presentation.components.DatePickerSupport;
 import io.github.ryanoviski.hestia.presentation.components.DialogSupport;
 import io.github.ryanoviski.hestia.presentation.components.MonthYearPicker;
+import io.github.ryanoviski.hestia.presentation.components.MoneyTextField;
+import io.github.ryanoviski.hestia.presentation.components.FormValidationSupport;
 import io.github.ryanoviski.hestia.util.MoneyUtils;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -198,6 +200,8 @@ public final class TransactionsController {
                     : item.type() == TransactionType.INCOME ? "Marcar como recebida" : "Marcar como paga",
                     () -> changeSettlement(item)));
             actions.getItems().add(menu("Cancelar", () -> cancel(item)));
+        } else if (item.origin() == TransactionOrigin.MANUAL) {
+            actions.getItems().add(menu("Excluir definitivamente", () -> delete(item)));
         }
         HBox row = new HBox(12, marker, identity, contextInfo, spacer, status, amount, actions);
         row.setAlignment(Pos.CENTER_LEFT);
@@ -222,7 +226,7 @@ public final class TransactionsController {
         dialog.getDialogPane().getButtonTypes().addAll(cancelType, saveType);
 
         TextField description = new TextField(); description.setPromptText("Ex.: Internet");
-        TextField amount = new TextField(); amount.setPromptText("R$ 0,00"); amount.getStyleClass().add("money-field");
+        MoneyTextField amount = new MoneyTextField();
         ComboBox<Category> category = expenseCategories();
         ComboBox<Profile> profile = activeProfiles();
         DatePicker due = DatePickerSupport.configure(new DatePicker(LocalDate.now()));
@@ -270,7 +274,7 @@ public final class TransactionsController {
             AccountKind selected = (AccountKind) kindGroup.getSelectedToggle().getUserData();
             toggle(recurringOptions, selected == AccountKind.RECURRING);
             toggle(installmentOptions, selected == AccountKind.INSTALLMENT);
-            updateInstallmentPreview(preview, description.getText(), amount.getText(), count.getValue(), due.getValue());
+            updateInstallmentPreview(preview, description.getText(), amount.getAmount(), count.getValue(), due.getValue());
         };
         kindGroup.selectedToggleProperty().addListener((o, oldValue, newValue) -> updateKind.run());
         amount.textProperty().addListener((o, oldValue, newValue) -> updateKind.run());
@@ -283,20 +287,24 @@ public final class TransactionsController {
         save.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
             event.consume();
             try {
-                if (profile.getValue() == null) throw new ValidationException("Selecione o perfil da conta.");
-                if (category.getValue() == null) throw new ValidationException("Selecione a categoria da conta.");
+                if(!FormValidationSupport.validate(error,
+                        FormValidationSupport.requiredText(description,"Informe a descrição."),
+                        FormValidationSupport.positiveMoney(amount,"Informe um valor maior que zero."),
+                        FormValidationSupport.requiredDate(due,"Informe o primeiro vencimento."),
+                        FormValidationSupport.requiredChoice(profile,"Selecione o perfil."),
+                        FormValidationSupport.requiredChoice(category,"Selecione a categoria.")))return;
                 AccountKind selected = (AccountKind) kindGroup.getSelectedToggle().getUserData();
                 switch (selected) {
                     case UNIQUE -> context.transactionService().create(new TransactionInput(TransactionType.EXPENSE,
-                            description.getText(), MoneyUtils.parseBrazilian(amount.getText()), profile.getValue().id(),
+                            description.getText(), amount.getAmount(), profile.getValue().id(),
                             category.getValue().id(), due.getValue(), due.getValue(), TransactionStatus.PENDING,
                             null, notes.getText()));
                     case RECURRING -> context.recurringExpenseService().create(new RecurringExpenseInput(
-                            description.getText(), MoneyUtils.parseBrazilian(amount.getText()), profile.getValue().id(),
+                            description.getText(), amount.getAmount(), profile.getValue().id(),
                             category.getValue().id(), due.getValue(), noEnd.isSelected() ? null : endDate.getValue(),
                             notes.getText(), true));
                     case INSTALLMENT -> context.installmentPlanService().create(new InstallmentPlanInput(
-                            description.getText(), MoneyUtils.parseBrazilian(amount.getText()), count.getValue(),
+                            description.getText(), amount.getAmount(), count.getValue(),
                             profile.getValue().id(), category.getValue().id(), due.getValue(), notes.getText()));
                 }
                 dialog.close();
@@ -313,10 +321,10 @@ public final class TransactionsController {
         dialog.showAndWait();
     }
 
-    private void updateInstallmentPreview(VBox preview, String description, String amount, int count, LocalDate due) {
+    private void updateInstallmentPreview(VBox preview, String description, java.math.BigDecimal amount, int count, LocalDate due) {
         preview.getChildren().clear();
         try {
-            var items = context.installmentPlanService().preview(description, MoneyUtils.parseBrazilian(amount), count, due);
+            var items = context.installmentPlanService().preview(description, amount, count, due);
             items.stream().limit(3).forEach(item -> {
                 Label line = new Label(item.sequence() + "ª parcela · " + MoneyUtils.formatCents(item.amountCents())
                         + " · " + DATE.format(item.dueDate()));
@@ -343,8 +351,7 @@ public final class TransactionsController {
         type.setDisable(fixedType != null); ComboBoxSupport.configure(type, TransactionType::displayName);
         TextField description = new TextField(existing == null ? "" : existing.description());
         description.setPromptText("Ex.: Supermercado");
-        TextField amount = new TextField(existing == null ? "" : MoneyUtils.fromCents(existing.amountCents()).toPlainString().replace('.', ','));
-        amount.setPromptText("R$ 0,00"); amount.getStyleClass().add("money-field");
+        MoneyTextField amount = new MoneyTextField(existing == null ? 0 : existing.amountCents());
         if (existing != null && existing.origin() == TransactionOrigin.INSTALLMENT) amount.setDisable(true);
         ComboBox<Profile> profile = profilesFor(existing); selectProfile(profile, existing);
         ComboBox<Category> category = new ComboBox<>(); ComboBoxSupport.categories(category);
@@ -406,8 +413,16 @@ public final class TransactionsController {
         save.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
             event.consume();
             try {
+                if(!FormValidationSupport.validate(error,
+                        FormValidationSupport.requiredChoice(type,"Selecione o tipo."),
+                        FormValidationSupport.positiveMoney(amount,"Informe um valor maior que zero."),
+                        FormValidationSupport.requiredText(description,"Informe a descrição."),
+                        FormValidationSupport.requiredChoice(profile,"Selecione o perfil."),
+                        FormValidationSupport.requiredChoice(category,"Selecione a categoria."),
+                        FormValidationSupport.requiredDate(reference,"Informe a data de referência."),
+                        FormValidationSupport.requiredChoice(status,"Selecione a situação.")))return;
                 TransactionInput input = new TransactionInput(type.getValue(), description.getText(),
-                        MoneyUtils.parseBrazilian(amount.getText()), profile.getValue() == null ? 0 : profile.getValue().id(),
+                        amount.getAmount(), profile.getValue().id(),
                         category.getValue() == null ? 0 : category.getValue().id(), reference.getValue(), due.getValue(),
                         status.getValue(), settlement.getValue(), notes.getText());
                 if (existing == null) context.transactionService().create(input); else context.transactionService().update(existing.id(), input);
@@ -447,16 +462,18 @@ public final class TransactionsController {
         Label name = new Label(item.description()); name.getStyleClass().add("transaction-description");
         Label value = new Label(MoneyUtils.formatCents(item.amountCents())); value.getStyleClass().add("money-highlight");
         VBox summary = new VBox(4, name, value); summary.getStyleClass().add("settlement-summary");
+        Label error=new Label();error.setWrapText(true);error.getStyleClass().add("form-error");
         VBox content = DialogSupport.content(income
                         ? "Informe a data em que a receita foi efetivamente recebida."
                         : "Informe a data em que a conta foi efetivamente paga.",
-                summary, DialogSupport.field(income ? "Data do recebimento" : "Data do pagamento", date, true));
+                summary, DialogSupport.field(income ? "Data do recebimento" : "Data do pagamento", date, true),error);
         dialog.getDialogPane().setContent(content);
         DialogSupport.prepare(dialog, transactionList, 500, 0);
         Button confirm = (Button) dialog.getDialogPane().lookupButton(confirmType);
         confirm.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
             event.consume();
-            if (date.getValue() == null) return;
+            if(!FormValidationSupport.validate(error,FormValidationSupport.requiredDate(date,
+                    income?"Informe a data do recebimento.":"Informe a data do pagamento.")))return;
             try {
                 context.transactionService().settle(item.id(), date.getValue());
                 dialog.close();
@@ -479,6 +496,15 @@ public final class TransactionsController {
             try { context.transactionService().cancel(item.id()); showFeedback("Movimentação cancelada.", false); refresh(); }
             catch (RuntimeException exception) { LOGGER.error("Could not cancel transaction", exception); showError("Não foi possível cancelar a movimentação."); }
         }
+    }
+
+    private void delete(Transaction item) {
+        if(!DialogSupport.confirm(transactionList,"Excluir movimentação","Excluir definitivamente “"+item.description()+"”?",
+                "Esta ação não poderá ser desfeita. Anexos vinculados devem ser removidos antes.",
+                "Excluir definitivamente",true))return;
+        try{context.transactionService().deleteCancelled(item.id());showFeedback("Movimentação excluída definitivamente.",false);refresh();}
+        catch(ValidationException exception){showError(exception.getMessage());}
+        catch(RuntimeException exception){LOGGER.error("Could not delete transaction",exception);showError("Não foi possível excluir a movimentação.");}
     }
 
     private void view(Transaction item) {

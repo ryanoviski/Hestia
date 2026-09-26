@@ -77,6 +77,17 @@ public final class TransactionService {
         repository.updateStatus(id, profiles.findDefaultHouseholdId(), TransactionStatus.CANCELLED, null);
     }
 
+    public void deleteCancelled(long id) {
+        long householdId=profiles.findDefaultHouseholdId();
+        Transaction transaction=find(id);
+        if(transaction.status()!=TransactionStatus.CANCELLED)
+            throw new ValidationException("Somente uma movimentação cancelada pode ser excluída definitivamente.");
+        if(transaction.origin()!=TransactionOrigin.MANUAL)
+            throw new ValidationException("Exclua a recorrência ou o parcelamento de origem para preservar o histórico.");
+        if(!repository.deleteCancelledManual(id,householdId))
+            throw new ValidationException("Remova os anexos vinculados antes de excluir esta movimentação.");
+    }
+
     private Validated validate(TransactionInput input, long householdId, Transaction existing) {
         if (input == null || input.type() == null) throw new ValidationException("Selecione o tipo.");
         String description = input.description() == null ? "" : input.description().trim();

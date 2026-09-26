@@ -10,6 +10,7 @@ import io.github.ryanoviski.hestia.domain.models.Profile;
 import io.github.ryanoviski.hestia.presentation.components.ColorPalette;
 import io.github.ryanoviski.hestia.presentation.components.ComboBoxSupport;
 import io.github.ryanoviski.hestia.presentation.components.DialogSupport;
+import io.github.ryanoviski.hestia.presentation.components.FormValidationSupport;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -88,6 +89,9 @@ public final class ProfilesController {
         boolean[] saved = {false};
         dialog.getDialogPane().lookupButton(saveType).addEventFilter(ActionEvent.ACTION, event -> {
             try {
+                if(!FormValidationSupport.validate(message,
+                        FormValidationSupport.requiredText(nameField,"Informe o nome."),
+                        FormValidationSupport.requiredChoice(typeField,"Selecione o tipo."))){event.consume();return;}
                 if (creating) service.createProfile(nameField.getText(), typeField.getValue(), colorPalette.getSelectedColor());
                 else service.updateProfile(profile.id(), nameField.getText(), typeField.getValue(), colorPalette.getSelectedColor());
                 saved[0] = true;

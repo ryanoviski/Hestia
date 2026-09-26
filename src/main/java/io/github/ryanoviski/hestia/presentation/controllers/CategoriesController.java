@@ -7,6 +7,7 @@ import io.github.ryanoviski.hestia.domain.models.Category;
 import io.github.ryanoviski.hestia.presentation.components.ColorPalette;
 import io.github.ryanoviski.hestia.presentation.components.ComboBoxSupport;
 import io.github.ryanoviski.hestia.presentation.components.DialogSupport;
+import io.github.ryanoviski.hestia.presentation.components.FormValidationSupport;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
@@ -97,6 +98,9 @@ public final class CategoriesController {
         CategoryType[] savedType = {typeField.getValue()};
         dialog.getDialogPane().lookupButton(saveType).addEventFilter(ActionEvent.ACTION, event -> {
             try {
+                if(!FormValidationSupport.validate(message,
+                        FormValidationSupport.requiredText(nameField,"Informe o nome."),
+                        FormValidationSupport.requiredChoice(typeField,"Selecione o tipo."))){event.consume();return;}
                 if (creating) service.create(nameField.getText(), typeField.getValue(), colorPalette.getSelectedColor());
                 else service.update(category.id(), nameField.getText(), typeField.getValue(), colorPalette.getSelectedColor());
                 saved[0] = true;

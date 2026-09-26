@@ -1,6 +1,8 @@
 package io.github.ryanoviski.hestia.application.services;
 
 import io.github.ryanoviski.hestia.application.dto.MonthlyReport;
+import io.github.ryanoviski.hestia.application.dto.CategoryExpenseReport;
+import io.github.ryanoviski.hestia.application.dto.ReportExpenseItem;
 import io.github.ryanoviski.hestia.domain.exceptions.ValidationException;
 import io.github.ryanoviski.hestia.util.MoneyUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -24,6 +26,7 @@ public final class ReportPdfService {
     private static final DateTimeFormatter PERIOD = DateTimeFormatter.ofPattern("MMMM 'de' yyyy", PT_BR);
     private static final DateTimeFormatter GENERATED = DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm", PT_BR)
             .withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     public Path export(MonthlyReport report, Path destination) {
         if (report == null) throw new ValidationException("Não há relatório para exportar.");
         if (destination == null) throw new ValidationException("Escolha onde salvar o relatório.");
@@ -58,6 +61,7 @@ public final class ReportPdfService {
                 writer.row("Variação do resultado", signed(report.resultChange()));
                 writer.table("Despesas por categoria", report.current().expensesByCategory());
                 writer.table("Despesas por perfil", report.expensesByProfile());
+                writer.expenseDetails(report);
                 writer.gap(12);
                 writer.text("Gerado em " + GENERATED.format(report.generatedAt()), 9, false);
                 writer.text("Hestia · Finanças em harmonia", 9, false);
@@ -134,6 +138,54 @@ public final class ReportPdfService {
                 return;
             }
             for (var entry : values.entrySet()) row(entry.getKey(), MoneyUtils.format(entry.getValue()));
+        }
+
+        private void expenseDetails(MonthlyReport report) throws IOException {
+            section("Pagos e vencidos por categoria");
+            if (report.expenseDetails().isEmpty()) {
+                text("Nenhum item pago ou vencido neste período.", 10, false);
+                return;
+            }
+            for (CategoryExpenseReport category : report.expenseDetails()) {
+                ensure(54);
+                text("Categoria: " + category.categoryName(), 11, true);
+                detailHeader();
+                for (ReportExpenseItem item : category.items()) detailRow(item);
+                row("Subtotal da categoria", MoneyUtils.formatCents(category.totalCents()));
+                gap(5);
+            }
+            ensure(72);
+            rule();
+            row("Total pago", MoneyUtils.formatCents(report.paidDetailCents()));
+            row("Total vencido", MoneyUtils.formatCents(report.overdueDetailCents()));
+            row("Total listado", MoneyUtils.formatCents(report.listedExpenseCents()));
+        }
+
+        private void detailHeader() throws IOException {
+            ensure(20);
+            textAt("Item",54,y,8,true);textAt("Vencimento",270,y,8,true);
+            textAt("Pagamento",337,y,8,true);textAt("Valor",411,y,8,true);textAt("Status",493,y,8,true);
+            y-=15;
+        }
+
+        private void detailRow(ReportExpenseItem item) throws IOException {
+            ensure(20);
+            textAt(fit(item.description(),regular,9,205),54,y,9,false);
+            textAt(date(item.dueDate()),270,y,9,false);textAt(date(item.settlementDate()),337,y,9,false);
+            textAt(MoneyUtils.formatCents(item.amountCents()),411,y,9,false);textAt(item.status(),493,y,9,true);
+            y-=17;
+        }
+
+        private String date(java.time.LocalDate value) { return value == null ? "—" : DATE.format(value); }
+
+        private String fit(String value, PDFont font, float size, float width) throws IOException {
+            if (value == null) return "";
+            String result=supportedText(value,font);
+            if(font.getStringWidth(result)/1000*size<=width)return result;
+            String suffix="...";
+            while(!result.isEmpty()&&font.getStringWidth(result+suffix)/1000*size>width)
+                result=result.substring(0,result.length()-1);
+            return result+suffix;
         }
 
         private void rule() throws IOException {

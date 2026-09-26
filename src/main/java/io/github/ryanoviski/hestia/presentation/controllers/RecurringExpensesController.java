@@ -10,6 +10,8 @@ import io.github.ryanoviski.hestia.domain.models.RecurringExpense;
 import io.github.ryanoviski.hestia.presentation.components.ComboBoxSupport;
 import io.github.ryanoviski.hestia.presentation.components.DatePickerSupport;
 import io.github.ryanoviski.hestia.presentation.components.DialogSupport;
+import io.github.ryanoviski.hestia.presentation.components.MoneyTextField;
+import io.github.ryanoviski.hestia.presentation.components.FormValidationSupport;
 import io.github.ryanoviski.hestia.util.MoneyUtils;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
@@ -18,8 +20,11 @@ import javafx.scene.layout.*;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class RecurringExpensesController {
+    private static final Logger LOGGER=LoggerFactory.getLogger(RecurringExpensesController.class);
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     @FXML private TextField searchField;
     @FXML private ComboBox<Profile> profileFilter;
@@ -66,6 +71,7 @@ public final class RecurringExpensesController {
         actions.getStyleClass().add("secondary-button");
         actions.getItems().add(menu("Editar", () -> form(item)));
         actions.getItems().add(menu(item.active() ? "Desativar" : "Reativar", () -> toggle(item)));
+        if(!item.active())actions.getItems().add(menu("Excluir definitivamente",()->delete(item)));
         HBox row = new HBox(10, info, spacer, active, amount, actions);
         row.setAlignment(Pos.CENTER_LEFT);
         row.getStyleClass().add("transaction-row");
@@ -102,8 +108,7 @@ public final class RecurringExpensesController {
 
         TextField description = new TextField(existing == null ? "" : existing.description());
         description.setPromptText("Ex.: Aluguel");
-        TextField amount = new TextField(existing == null ? "" : existing.amount().toPlainString().replace('.', ','));
-        amount.setPromptText("R$ 0,00"); amount.getStyleClass().add("money-field");
+        MoneyTextField amount = new MoneyTextField(existing == null ? 0 : existing.amountCents());
         ComboBox<Profile> profile = new ComboBox<>();
         profile.getItems().setAll(context.profileService().listProfiles());
         ComboBoxSupport.profiles(profile);
@@ -142,7 +147,13 @@ public final class RecurringExpensesController {
         ((Button) dialog.getDialogPane().lookupButton(saveType)).addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
             event.consume();
             try {
-                var input = new RecurringExpenseInput(description.getText(), MoneyUtils.parseBrazilian(amount.getText()),
+                if(!FormValidationSupport.validate(error,
+                        FormValidationSupport.requiredText(description,"Informe a descrição."),
+                        FormValidationSupport.positiveMoney(amount,"Informe um valor maior que zero."),
+                        FormValidationSupport.requiredDate(first,"Informe o primeiro vencimento."),
+                        FormValidationSupport.requiredChoice(profile,"Selecione o perfil."),
+                        FormValidationSupport.requiredChoice(category,"Selecione a categoria.")))return;
+                var input = new RecurringExpenseInput(description.getText(), amount.getAmount(),
                         profile.getValue() == null ? 0 : profile.getValue().id(), category.getValue() == null ? 0 : category.getValue().id(),
                         first.getValue(), end.getValue(), notes.getText(), active.isSelected());
                 if (existing == null) context.recurringExpenseService().create(input);
@@ -154,6 +165,15 @@ public final class RecurringExpensesController {
             }
         });
         dialog.showAndWait();
+    }
+
+    private void delete(RecurringExpense item){
+        if(!DialogSupport.confirm(list,"Excluir recorrência","Excluir definitivamente “"+item.description()+"”?",
+                "A definição será removida. Movimentações já geradas permanecerão como histórico independente.",
+                "Excluir definitivamente",true))return;
+        try{context.recurringExpenseService().deleteInactive(item.id());refresh();}
+        catch(ValidationException exception){showError(exception.getMessage());}
+        catch(RuntimeException exception){LOGGER.error("Could not delete recurring expense {}",item.id(),exception);showError("Não foi possível excluir a recorrência. Tente novamente.");}
     }
 
     private void select(ComboBox<Profile> profiles, ComboBox<Category> categories, RecurringExpense existing) {
@@ -170,6 +190,11 @@ public final class RecurringExpensesController {
         MenuItem item = new MenuItem(text);
         item.setOnAction(event -> action.run());
         return item;
+    }
+
+    private void showError(String message){
+        Alert alert=new Alert(Alert.AlertType.ERROR,message,ButtonType.OK);alert.setHeaderText("Não foi possível concluir");
+        DialogSupport.prepare(alert,list,500,0);alert.showAndWait();
     }
 
     private Long id(Profile profile) { return profile == null ? null : profile.id(); }

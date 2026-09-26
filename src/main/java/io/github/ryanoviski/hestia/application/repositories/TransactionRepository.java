@@ -19,4 +19,6 @@ public interface TransactionRepository {
     List<Transaction> searchCalendar(long householdId, TransactionFilter filter, Clock clock);
     void updateStatus(long id, long householdId, TransactionStatus status, LocalDate settlementDate);
     DashboardSummary summarize(long householdId, YearMonth month, Clock clock);
+    List<Transaction> findReportExpenses(long householdId, YearMonth month, Clock clock);
+    boolean deleteCancelledManual(long id, long householdId);
 }

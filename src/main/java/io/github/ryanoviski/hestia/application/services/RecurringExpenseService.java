@@ -50,6 +50,14 @@ public final class RecurringExpenseService {
         repository.setRecurringActive(profiles.findDefaultHouseholdId(), id, active, cancelFuturePending,
                 LocalDate.now(clock));
     }
+    public void deleteInactive(long id) {
+        long householdId=profiles.findDefaultHouseholdId();
+        RecurringExpense recurring=repository.findRecurringById(householdId,id)
+                .orElseThrow(()->new ValidationException("Recorrência não encontrada."));
+        if(recurring.active()) throw new ValidationException("Desative a recorrência antes de excluí-la definitivamente.");
+        if(!repository.deleteInactiveRecurring(householdId,id))
+            throw new ValidationException("A recorrência não pôde ser excluída.");
+    }
     private RecurringExpense validated(Long id, long householdId, RecurringExpenseInput input,
                                        Instant createdAt, Instant updatedAt) {
         if (input == null || input.firstDueDate() == null) throw new ValidationException("Informe o primeiro vencimento.");

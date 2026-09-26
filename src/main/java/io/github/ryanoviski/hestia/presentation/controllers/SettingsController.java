@@ -71,14 +71,19 @@ public final class SettingsController {
                 "A proteção usa AES-256. A senha não é armazenada pelo Hestia.",
                 protect, DialogSupport.field("Senha", password, false),
                 DialogSupport.field("Confirmar senha", confirmation, false));
-        VBox content = DialogSupport.content("Escolha se esta cópia deve exigir senha para restauração.", passwordFields);
+        Label validation=new Label();validation.setWrapText(true);validation.getStyleClass().add("form-error");
+        VBox content = DialogSupport.content("Escolha se esta cópia deve exigir senha para restauração.", passwordFields,validation);
         dialog.getDialogPane().setContent(content);
         DialogSupport.prepare(dialog, status, 540, 0);
+        dialog.getDialogPane().lookupButton(createType).addEventFilter(javafx.event.ActionEvent.ACTION,event->{
+            password.getStyleClass().remove("field-invalid");confirmation.getStyleClass().remove("field-invalid");
+            if(protect.isSelected()&&(password.getText().isBlank()||!password.getText().equals(confirmation.getText()))){
+                event.consume();validation.setText("Informe duas senhas iguais para proteger o backup.");
+                if(password.getText().isBlank()){password.getStyleClass().add("field-invalid");password.requestFocus();}
+                else{confirmation.getStyleClass().add("field-invalid");confirmation.requestFocus();}
+            }
+        });
         if (dialog.showAndWait().orElse(cancelType) != createType) return;
-        if (protect.isSelected() && (!password.getText().equals(confirmation.getText()) || password.getText().isBlank())) {
-            message("Informe duas senhas iguais para proteger o backup.", true);
-            return;
-        }
         char[] secret = protect.isSelected() ? password.getText().toCharArray() : null;
         busy(true);
         context.backupService().createAsync(file.toPath(), secret).whenComplete((path, error) -> {
@@ -126,6 +131,11 @@ public final class SettingsController {
     }
 
     @FXML private void saveAutomatic() {
+        automaticDirectory.getStyleClass().remove("field-invalid");
+        if(automaticEnabled.isSelected()&&automaticDirectory.getText().isBlank()){
+            automaticDirectory.getStyleClass().add("field-invalid");automaticDirectory.requestFocus();
+            message("Escolha uma pasta para ativar o backup automático.",true);return;
+        }
         if (automaticEnabled.isSelected()) {
             if (!DialogSupport.confirm(status, "Backup automático", "Ativar backup automático?",
                     "Backups automáticos não usam senha nesta versão.", "Ativar", false)) return;

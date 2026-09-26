@@ -22,4 +22,6 @@ public interface FinancialCommitmentRepository {
     List<InstallmentPlan> findInstallmentPlans(long householdId);
     List<Installment> findInstallments(long householdId, long planId);
     void cancelRemainingInstallments(long householdId, long planId, LocalDate today);
+    boolean deleteInactiveRecurring(long householdId, long id);
+    boolean deleteInactiveInstallmentPlan(long householdId, long id);
 }

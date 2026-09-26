@@ -7,6 +7,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
+import javafx.geometry.Pos;
+import javafx.scene.layout.Priority;
 import javafx.util.StringConverter;
 
 import java.util.function.Function;
@@ -90,7 +92,12 @@ public final class ComboBoxSupport {
                 }
                 Label label = new Label(converter.toString(item));
                 label.getStyleClass().add("combo-item-label");
-                setGraphic(new HBox(8, color, label));
+                label.setMaxWidth(Double.MAX_VALUE);
+                HBox.setHgrow(label, Priority.ALWAYS);
+                HBox row = new HBox(8, color, label);
+                row.setAlignment(Pos.CENTER_LEFT);
+                row.setMaxWidth(Double.MAX_VALUE);
+                setGraphic(row);
             }
         };
     }

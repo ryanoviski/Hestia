@@ -11,6 +11,8 @@ import io.github.ryanoviski.hestia.domain.models.Profile;
 import io.github.ryanoviski.hestia.presentation.components.ComboBoxSupport;
 import io.github.ryanoviski.hestia.presentation.components.DatePickerSupport;
 import io.github.ryanoviski.hestia.presentation.components.DialogSupport;
+import io.github.ryanoviski.hestia.presentation.components.MoneyTextField;
+import io.github.ryanoviski.hestia.presentation.components.FormValidationSupport;
 import io.github.ryanoviski.hestia.util.MoneyUtils;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
@@ -19,8 +21,11 @@ import javafx.scene.layout.*;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class InstallmentPlansController {
+    private static final Logger LOGGER=LoggerFactory.getLogger(InstallmentPlansController.class);
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     @FXML private VBox list;
     @FXML private Label emptyState;
@@ -46,7 +51,7 @@ public final class InstallmentPlansController {
         dialog.getDialogPane().getButtonTypes().addAll(cancelType, saveType);
         TextField description = new TextField();
         description.setPromptText("Ex.: Notebook");
-        TextField amount = new TextField(); amount.setPromptText("R$ 0,00"); amount.getStyleClass().add("money-field");
+        MoneyTextField amount = new MoneyTextField();
         Spinner<Integer> count = new Spinner<>(1, 120, 2);
         count.setEditable(true); count.setMaxWidth(Double.MAX_VALUE);
         ComboBox<Profile> profile = new ComboBox<>();
@@ -69,7 +74,7 @@ public final class InstallmentPlansController {
             preview.getChildren().clear();
             try {
                 var installments = context.installmentPlanService().preview(description.getText(),
-                        MoneyUtils.parseBrazilian(amount.getText()), count.getValue(), first.getValue());
+                        amount.getAmount(), count.getValue(), first.getValue());
                 Label total = new Label(count.getValue() + " parcelas · total " + MoneyUtils.formatCents(
                         installments.stream().mapToLong(item -> item.amountCents()).sum()));
                 total.getStyleClass().add("transaction-description");
@@ -106,8 +111,14 @@ public final class InstallmentPlansController {
         ((Button) dialog.getDialogPane().lookupButton(saveType)).addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
             event.consume();
             try {
+                if(!FormValidationSupport.validate(error,
+                        FormValidationSupport.requiredText(description,"Informe a descrição."),
+                        FormValidationSupport.positiveMoney(amount,"Informe um valor maior que zero."),
+                        FormValidationSupport.requiredDate(first,"Informe o primeiro vencimento."),
+                        FormValidationSupport.requiredChoice(profile,"Selecione o perfil."),
+                        FormValidationSupport.requiredChoice(category,"Selecione a categoria.")))return;
                 context.installmentPlanService().create(new InstallmentPlanInput(description.getText(),
-                        MoneyUtils.parseBrazilian(amount.getText()), count.getValue(),
+                        amount.getAmount(), count.getValue(),
                         profile.getValue() == null ? 0 : profile.getValue().id(),
                         category.getValue() == null ? 0 : category.getValue().id(), first.getValue(), notes.getText()));
                 dialog.close();
@@ -140,7 +151,8 @@ public final class InstallmentPlansController {
         MenuButton actions = new MenuButton("Ações");
         actions.getStyleClass().add("secondary-button");
         actions.getItems().add(menu("Ver parcelas", () -> details(plan)));
-        actions.getItems().add(menu("Cancelar restantes", () -> cancel(plan)));
+        if(plan.active())actions.getItems().add(menu("Cancelar restantes", () -> cancel(plan)));
+        else actions.getItems().add(menu("Excluir definitivamente",()->delete(plan)));
         HBox row = new HBox(10, info, spacer, status, money, actions);
         row.setAlignment(Pos.CENTER_LEFT);
         row.getStyleClass().add("transaction-row");
@@ -199,6 +211,20 @@ public final class InstallmentPlansController {
             context.installmentPlanService().cancelRemaining(plan.id());
             refresh();
         }
+    }
+
+    private void delete(InstallmentPlan plan){
+        if(!DialogSupport.confirm(list,"Excluir parcelamento","Excluir definitivamente “"+plan.description()+"”?",
+                "A definição e o vínculo das parcelas serão removidos. As movimentações continuarão no histórico financeiro.",
+                "Excluir definitivamente",true))return;
+        try{context.installmentPlanService().deleteInactive(plan.id());refresh();}
+        catch(ValidationException exception){showError(exception.getMessage());}
+        catch(RuntimeException exception){LOGGER.error("Could not delete installment plan {}",plan.id(),exception);showError("Não foi possível excluir o parcelamento. Tente novamente.");}
+    }
+
+    private void showError(String message){
+        Alert alert=new Alert(Alert.AlertType.ERROR,message,ButtonType.OK);alert.setHeaderText("Não foi possível concluir");
+        DialogSupport.prepare(alert,list,500,0);alert.showAndWait();
     }
 
     private MenuItem menu(String text, Runnable action) {

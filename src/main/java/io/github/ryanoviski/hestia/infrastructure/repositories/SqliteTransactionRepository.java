@@ -107,7 +107,7 @@ public final class SqliteTransactionRepository implements TransactionRepository 
         StringBuilder sql = new StringBuilder(SELECT + " WHERE t.household_id=?");
         List<Object> values = new ArrayList<>(); values.add(householdId);
         if (filter.search() != null && !filter.search().isBlank()) { sql.append(" AND lower(t.description) LIKE lower(?)"); values.add("%" + filter.search().trim() + "%"); }
-        if (filter.month() != null) { sql.append(calendarDates ? " AND COALESCE(t.due_date,t.reference_date)>=? AND COALESCE(t.due_date,t.reference_date)<?" : " AND t.reference_date>=? AND t.reference_date<?"); values.add(filter.month().atDay(1).toString()); values.add(filter.month().plusMonths(1).atDay(1).toString()); }
+        if (filter.month() != null) { sql.append(calendarDates ? " AND COALESCE(t.due_date,t.reference_date)>=? AND COALESCE(t.due_date,t.reference_date)<?" : " AND (CASE WHEN t.status='SETTLED' THEN t.settlement_date ELSE t.reference_date END)>=? AND (CASE WHEN t.status='SETTLED' THEN t.settlement_date ELSE t.reference_date END)<?"); values.add(filter.month().atDay(1).toString()); values.add(filter.month().plusMonths(1).atDay(1).toString()); }
         if (filter.type() != null) { sql.append(" AND t.transaction_type=?"); values.add(filter.type().name()); }
         if (filter.status() != null) { sql.append(" AND t.status=?"); values.add(filter.status().name()); }
         if (filter.profileId() != null) { sql.append(" AND t.profile_id=?"); values.add(filter.profileId()); }
@@ -145,20 +145,24 @@ public final class SqliteTransactionRepository implements TransactionRepository 
         long received=0, expected=0, paid=0, pending=0, overdue=0, projectedIncome=0, projectedExpense=0;
         String aggregate = """
                 SELECT
-                COALESCE(SUM(CASE WHEN transaction_type='INCOME' AND status='SETTLED' THEN amount_cents ELSE 0 END),0) received,
-                COALESCE(SUM(CASE WHEN transaction_type='INCOME' AND status='PENDING' THEN amount_cents ELSE 0 END),0) expected,
-                COALESCE(SUM(CASE WHEN transaction_type='EXPENSE' AND status='SETTLED' THEN amount_cents ELSE 0 END),0) paid,
-                COALESCE(SUM(CASE WHEN transaction_type='EXPENSE' AND status='PENDING' THEN amount_cents ELSE 0 END),0) pending,
-                COALESCE(SUM(CASE WHEN transaction_type='EXPENSE' AND status='PENDING' AND due_date<? THEN amount_cents ELSE 0 END),0) overdue,
-                COALESCE(SUM(CASE WHEN transaction_type='INCOME' AND status!='CANCELLED' THEN amount_cents ELSE 0 END),0) projected_income,
-                COALESCE(SUM(CASE WHEN transaction_type='EXPENSE' AND status!='CANCELLED' THEN amount_cents ELSE 0 END),0) projected_expense
-                FROM transactions WHERE household_id=? AND reference_date>=? AND reference_date<?
+                COALESCE(SUM(CASE WHEN transaction_type='INCOME' AND status='SETTLED' AND settlement_date>=? AND settlement_date<? THEN amount_cents ELSE 0 END),0) received,
+                COALESCE(SUM(CASE WHEN transaction_type='INCOME' AND status='PENDING' AND reference_date>=? AND reference_date<? THEN amount_cents ELSE 0 END),0) expected,
+                COALESCE(SUM(CASE WHEN transaction_type='EXPENSE' AND status='SETTLED' AND settlement_date>=? AND settlement_date<? THEN amount_cents ELSE 0 END),0) paid,
+                COALESCE(SUM(CASE WHEN transaction_type='EXPENSE' AND status='PENDING' AND reference_date>=? AND reference_date<? THEN amount_cents ELSE 0 END),0) pending,
+                COALESCE(SUM(CASE WHEN transaction_type='EXPENSE' AND status='PENDING' AND reference_date>=? AND reference_date<? AND due_date<? THEN amount_cents ELSE 0 END),0) overdue,
+                COALESCE(SUM(CASE WHEN transaction_type='INCOME' AND status!='CANCELLED' AND reference_date>=? AND reference_date<? THEN amount_cents ELSE 0 END),0) projected_income,
+                COALESCE(SUM(CASE WHEN transaction_type='EXPENSE' AND status!='CANCELLED' AND reference_date>=? AND reference_date<? THEN amount_cents ELSE 0 END),0) projected_expense
+                FROM transactions WHERE household_id=?
                 """;
         Map<String, BigDecimal> byCategory = new LinkedHashMap<>();
         List<Transaction> upcoming = new ArrayList<>();
         try (var connection = connections.openConnection()) {
             try (var statement = connection.prepareStatement(aggregate)) {
-                statement.setString(1,today); statement.setLong(2,householdId); statement.setString(3,start); statement.setString(4,end);
+                int parameter=1;
+                for(int pair=0;pair<5;pair++){statement.setString(parameter++,start);statement.setString(parameter++,end);}
+                statement.setString(parameter++,today);
+                for(int pair=0;pair<2;pair++){statement.setString(parameter++,start);statement.setString(parameter++,end);}
+                statement.setLong(parameter,householdId);
                 try (var r=statement.executeQuery()) { received=r.getLong("received"); expected=r.getLong("expected"); paid=r.getLong("paid"); pending=r.getLong("pending"); overdue=r.getLong("overdue"); projectedIncome=r.getLong("projected_income"); projectedExpense=r.getLong("projected_expense"); }
             }
             try (var statement = connection.prepareStatement("""
@@ -166,7 +170,8 @@ public final class SqliteTransactionRepository implements TransactionRepository 
                     FROM transactions t JOIN categories c ON c.id=t.category_id
                     LEFT JOIN category_preferences cp ON cp.category_id=c.id AND cp.household_id=t.household_id
                     WHERE t.household_id=? AND t.transaction_type='EXPENSE' AND t.status!='CANCELLED'
-                    AND t.reference_date>=? AND t.reference_date<?
+                    AND (CASE WHEN t.status='SETTLED' THEN t.settlement_date ELSE t.reference_date END)>=?
+                    AND (CASE WHEN t.status='SETTLED' THEN t.settlement_date ELSE t.reference_date END)<?
                     GROUP BY c.id,COALESCE(cp.name,c.name) ORDER BY total DESC
                     """)) {
                 statement.setLong(1,householdId); statement.setString(2,start); statement.setString(3,end);
@@ -174,7 +179,7 @@ public final class SqliteTransactionRepository implements TransactionRepository 
             }
             try (var statement = connection.prepareStatement(SELECT + """
                     WHERE t.household_id=? AND t.transaction_type='EXPENSE' AND t.status='PENDING' AND t.due_date>=?
-                    ORDER BY t.due_date LIMIT 5
+                    ORDER BY t.due_date, t.id LIMIT 5
                     """)) {
                 statement.setLong(1,householdId); statement.setString(2,today);
                 try (var r=statement.executeQuery()) { while(r.next()) upcoming.add(map(r)); }
@@ -183,6 +188,33 @@ public final class SqliteTransactionRepository implements TransactionRepository 
         return new DashboardSummary(MoneyUtils.fromCents(received),MoneyUtils.fromCents(expected),MoneyUtils.fromCents(paid),
                 MoneyUtils.fromCents(pending),MoneyUtils.fromCents(overdue),MoneyUtils.fromCents(received-paid),
                 MoneyUtils.fromCents(projectedIncome-projectedExpense),byCategory,upcoming);
+    }
+
+    @Override public List<Transaction> findReportExpenses(long householdId, YearMonth month, Clock clock) {
+        String start=month.atDay(1).toString(), end=month.plusMonths(1).atDay(1).toString();
+        String sql=SELECT+"""
+                WHERE t.household_id=? AND t.transaction_type='EXPENSE' AND
+                ((t.status='SETTLED' AND t.settlement_date>=? AND t.settlement_date<?) OR
+                 (t.status='PENDING' AND t.due_date>=? AND t.due_date<? AND t.due_date<?))
+                ORDER BY category_name, COALESCE(t.settlement_date,t.due_date), t.id
+                """;
+        try(var connection=connections.openConnection();var statement=connection.prepareStatement(sql)){
+            statement.setLong(1,householdId);statement.setString(2,start);statement.setString(3,end);
+            statement.setString(4,start);statement.setString(5,end);statement.setString(6,LocalDate.now(clock).toString());
+            try(var result=statement.executeQuery()){List<Transaction> items=new ArrayList<>();while(result.next())items.add(map(result));return items;}
+        }catch(SQLException exception){throw failure("find report expenses",exception);}
+    }
+
+    @Override public boolean deleteCancelledManual(long id,long householdId){
+        String sql="""
+                DELETE FROM transactions WHERE id=? AND household_id=? AND status='CANCELLED'
+                AND NOT EXISTS(SELECT 1 FROM recurring_expense_occurrences WHERE transaction_id=transactions.id)
+                AND NOT EXISTS(SELECT 1 FROM installments WHERE transaction_id=transactions.id)
+                AND NOT EXISTS(SELECT 1 FROM attachments WHERE transaction_id=transactions.id)
+                """;
+        try(var connection=connections.openConnection();var statement=connection.prepareStatement(sql)){
+            statement.setLong(1,id);statement.setLong(2,householdId);return statement.executeUpdate()==1;
+        }catch(SQLException exception){throw failure("delete cancelled transaction",exception);}
     }
 
     private void bindAll(PreparedStatement s, Transaction t, int i) throws SQLException {

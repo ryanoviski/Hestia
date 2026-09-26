@@ -89,6 +89,18 @@ public final class SqliteFinancialCommitmentRepository implements FinancialCommi
         (SELECT i.transaction_id FROM installments i JOIN installment_plans p ON p.id=i.installment_plan_id WHERE p.id=? AND p.household_id=?)
         """)){s.setString(1,Instant.now().toString());s.setString(2,today.toString());s.setLong(3,planId);s.setLong(4,householdId);s.executeUpdate();}try(var s=c.prepareStatement("UPDATE installment_plans SET active=0,updated_at=? WHERE id=? AND household_id=?")){s.setString(1,Instant.now().toString());s.setLong(2,planId);s.setLong(3,householdId);s.executeUpdate();}return null;});}
 
+    @Override public boolean deleteInactiveRecurring(long householdId,long id){return transaction("delete inactive recurring expense",c->{
+        if(!inactiveExists(c,"recurring_expenses",householdId,id))return false;
+        try(var links=c.prepareStatement("DELETE FROM recurring_expense_occurrences WHERE recurring_expense_id=?")){links.setLong(1,id);links.executeUpdate();}
+        try(var rule=c.prepareStatement("DELETE FROM recurring_expenses WHERE id=? AND household_id=? AND active=0")){rule.setLong(1,id);rule.setLong(2,householdId);return rule.executeUpdate()==1;}
+    });}
+
+    @Override public boolean deleteInactiveInstallmentPlan(long householdId,long id){return transaction("delete inactive installment plan",c->{
+        if(!inactiveExists(c,"installment_plans",householdId,id))return false;
+        try(var links=c.prepareStatement("DELETE FROM installments WHERE installment_plan_id=?")){links.setLong(1,id);links.executeUpdate();}
+        try(var plan=c.prepareStatement("DELETE FROM installment_plans WHERE id=? AND household_id=? AND active=0")){plan.setLong(1,id);plan.setLong(2,householdId);return plan.executeUpdate()==1;}
+    });}
+
     private long insertRule(Connection c,RecurringExpense r)throws SQLException{try(var s=c.prepareStatement("""
         INSERT INTO recurring_expenses(household_id,profile_id,category_id,description,amount_cents,first_due_date,end_date,active,notes,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?)
         """,Statement.RETURN_GENERATED_KEYS)){s.setLong(1,r.householdId());s.setLong(2,r.profileId());s.setLong(3,r.categoryId());s.setString(4,r.description());s.setLong(5,r.amountCents());s.setString(6,r.firstDueDate().toString());s.setString(7,r.endDate()==null?null:r.endDate().toString());s.setInt(8,r.active()?1:0);s.setString(9,r.notes());s.setString(10,r.createdAt().toString());s.setString(11,r.updatedAt().toString());s.executeUpdate();return key(s);}}
@@ -102,6 +114,7 @@ public final class SqliteFinancialCommitmentRepository implements FinancialCommi
     private RecurringExpense withId(RecurringExpense r,long id){return new RecurringExpense(id,r.householdId(),r.profileId(),r.categoryId(),r.description(),r.amountCents(),r.firstDueDate(),r.endDate(),r.active(),r.notes(),r.createdAt(),r.updatedAt(),r.profileName(),r.categoryName(),r.nextDueDate());}
     private LocalDate date(ResultSet r,String n)throws SQLException{String v=r.getString(n);return v==null?null:LocalDate.parse(v);}private long key(java.sql.PreparedStatement s)throws SQLException{try(var k=s.getGeneratedKeys()){if(!k.next())throw new SQLException("No identifier returned");return k.getLong(1);}}
     private void bind(java.sql.PreparedStatement s,List<Object> values)throws SQLException{int i=1;for(Object v:values){if(v instanceof Long l)s.setLong(i++,l);else s.setString(i++,v.toString());}}
+    private boolean inactiveExists(Connection c,String table,long householdId,long id)throws SQLException{try(var s=c.prepareStatement("SELECT 1 FROM "+table+" WHERE id=? AND household_id=? AND active=0")){s.setLong(1,id);s.setLong(2,householdId);try(var r=s.executeQuery()){return r.next();}}}
     private <T>T transaction(String action,SqlWork<T> work){try(var c=connections.openConnection()){c.setAutoCommit(false);try{T result=work.run(c);c.commit();return result;}catch(Exception e){c.rollback();throw e;}}catch(Exception e){if(e instanceof DatabaseException d)throw d;throw failure(action,e);}}
     private DatabaseException failure(String action,Exception e){return new DatabaseException("Could not "+action,e);}@FunctionalInterface private interface SqlWork<T>{T run(Connection c)throws Exception;}
 }

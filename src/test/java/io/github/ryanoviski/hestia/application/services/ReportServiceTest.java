@@ -85,6 +85,33 @@ class ReportServiceTest {
         assertThat(report.expensesByProfile()).isEmpty();
     }
 
+    @Test void groupsPaidAndOverdueItemsByCategoryUsingSettlementMonth() {
+        var profile=profiles.createProfile("João",ProfileType.PERSON,null);
+        var housing=categories.search(CategoryType.EXPENSE,"Moradia",false).getFirst();
+        var food=categories.search(CategoryType.EXPENSE,"Alimentação",false).getFirst();
+        transactions.create(new TransactionInput(TransactionType.EXPENSE,"Energia paga antecipadamente",
+                new BigDecimal("999999.99"),profile.id(),housing.id(),LocalDate.of(2026,12,1),
+                LocalDate.of(2026,12,15),TransactionStatus.SETTLED,LocalDate.of(2026,9,5),null));
+        create(TransactionType.EXPENSE,"Aluguel vencido com uma descrição propositalmente longa para o PDF",
+                "1200",profile.id(),housing.id(),LocalDate.of(2026,9,10),TransactionStatus.PENDING);
+        create(TransactionType.EXPENSE,"Mercado vencido","300",profile.id(),food.id(),
+                LocalDate.of(2026,9,12),TransactionStatus.PENDING);
+
+        var report=reports.monthly(YearMonth.of(2026,9));
+        assertThat(report.expenseDetails()).extracting("categoryName").containsExactly("Alimentação","Moradia");
+        assertThat(report.paidDetailCents()).isEqualTo(99_999_999);
+        assertThat(report.overdueDetailCents()).isEqualTo(150_000);
+        assertThat(report.listedExpenseCents()).isEqualTo(100_149_999);
+        assertThat(report.expenseDetails()).filteredOn(item->item.categoryName().equals("Moradia")).singleElement()
+                .satisfies(category->{assertThat(category.items()).extracting("status").containsExactlyInAnyOrder("Pago","Vencido");
+                    assertThat(category.paidCents()).isEqualTo(99_999_999);assertThat(category.overdueCents()).isEqualTo(120_000);});
+        assertThat(reports.monthly(YearMonth.of(2026,12)).paidDetailCents()).isZero();
+    }
+
+    @Test void returnsNoDetailedCategoriesWhenThereAreNoPaidOrOverdueItems() {
+        assertThat(reports.monthly(YearMonth.of(2026,9)).expenseDetails()).isEmpty();
+    }
+
     @Test void exportsStructuredPdfWithFinancialContent() throws Exception {
         var profile = profiles.createProfile("Ana", ProfileType.PERSON, null);
         var category = categories.search(CategoryType.EXPENSE, "Moradia", false).getFirst();
@@ -95,8 +122,20 @@ class ReportServiceTest {
         try (var document = Loader.loadPDF(file.toFile())) {
             String text = new PDFTextStripper().getText(document);
             assertThat(text).contains("Hestia", "Relatório financeiro", "Resumo financeiro",
-                    "Despesas por categoria", "Moradia", "Despesas por perfil", "Ana");
+                    "Despesas por categoria", "Moradia", "Despesas por perfil", "Ana",
+                    "Pagos e vencidos por categoria", "Aluguel", "Pago", "Total pago");
         }
+    }
+
+    @Test void exportsMultiplePagesWithLongDescriptionsAndAccents() throws Exception {
+        var profile=profiles.createProfile("José",ProfileType.PERSON,null);
+        var category=categories.search(CategoryType.EXPENSE,"Moradia",false).getFirst();
+        for(int index=0;index<55;index++)create(TransactionType.EXPENSE,
+                "Manutenção elétrica número "+index+" com descrição longa e acentuação","10",profile.id(),category.id(),
+                LocalDate.of(2026,9,10),TransactionStatus.SETTLED);
+        Path file=new ReportPdfService().export(reports.monthly(YearMonth.of(2026,9)),directory.resolve("multipagina.pdf"));
+        try(var document=Loader.loadPDF(file.toFile())){assertThat(document.getNumberOfPages()).isGreaterThan(1);
+            assertThat(new PDFTextStripper().getText(document)).contains("Manutenção", "Total listado");}
     }
 
     @Test void exportsPdfSafelyWhenUserLabelsContainUnsupportedUnicode() throws Exception {

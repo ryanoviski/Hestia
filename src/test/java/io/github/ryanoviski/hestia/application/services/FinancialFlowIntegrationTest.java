@@ -126,6 +126,8 @@ class FinancialFlowIntegrationTest {
         assertThatThrownBy(()->transactions.create(input(TransactionType.EXPENSE,expenseCategory,"",BigDecimal.TEN,TransactionStatus.PENDING,null,null))).isInstanceOf(ValidationException.class).hasMessageContaining("descrição");
         assertThatThrownBy(()->transactions.create(input(TransactionType.EXPENSE,expenseCategory,"Zero",BigDecimal.ZERO,TransactionStatus.PENDING,null,null))).isInstanceOf(ValidationException.class).hasMessageContaining("maior que zero");
         assertThatThrownBy(()->transactions.create(input(TransactionType.EXPENSE,expenseCategory,"Negativa",BigDecimal.ONE.negate(),TransactionStatus.PENDING,null,null))).isInstanceOf(ValidationException.class);
+        assertThatThrownBy(()->transactions.create(input(TransactionType.EXPENSE,expenseCategory,"Sem pagamento",BigDecimal.TEN,TransactionStatus.SETTLED,LocalDate.of(2026,9,1),null)))
+                .isInstanceOf(ValidationException.class).hasMessageContaining("data de conclusão");
         var overdue=transactions.create(input(TransactionType.EXPENSE,expenseCategory,"Conta vencida",new BigDecimal("100"),TransactionStatus.PENDING,LocalDate.of(2026,9,17),null));
         assertThat(overdue.isOverdue(clock)).isTrue();
         assertThat(transactions.search(new TransactionFilter(null,null,TransactionType.EXPENSE,null,null,null,true,true))).extracting("id").containsExactly(overdue.id());
@@ -161,6 +163,54 @@ class FinancialFlowIntegrationTest {
         assertThat(summary.expensesByCategory().values()).singleElement()
                 .satisfies(value -> assertThat(value).isEqualByComparingTo("480"));
         assertThat(summary.upcomingDue()).extracting("description").containsExactly("Próxima");
+    }
+
+    @Test void assignsRealizedValuesToSettlementMonthAndKeepsProjectionOnReferenceMonth() {
+        transactions.create(new TransactionInput(TransactionType.EXPENSE,"Pagamento antecipado",new BigDecimal("500"),
+                activeProfile.id(),expenseCategory.id(),LocalDate.of(2026,12,1),LocalDate.of(2026,12,15),
+                TransactionStatus.SETTLED,LocalDate.of(2026,10,20),null));
+        transactions.create(new TransactionInput(TransactionType.EXPENSE,"Pagamento atrasado",new BigDecimal("200"),
+                activeProfile.id(),expenseCategory.id(),LocalDate.of(2026,9,1),LocalDate.of(2026,9,10),
+                TransactionStatus.SETTLED,LocalDate.of(2026,10,5),null));
+
+        assertThat(dashboard.summary(YearMonth.of(2026,10)).paidExpenses()).isEqualByComparingTo("700");
+        assertThat(dashboard.summary(YearMonth.of(2026,10)).projectedResult()).isZero();
+        assertThat(dashboard.summary(YearMonth.of(2026,12)).paidExpenses()).isZero();
+        assertThat(dashboard.summary(YearMonth.of(2026,12)).projectedResult()).isEqualByComparingTo("-500");
+        assertThat(transactions.search(new TransactionFilter(null,YearMonth.of(2026,10),TransactionType.EXPENSE,
+                TransactionStatus.SETTLED,null,null,false,false))).hasSize(2);
+        assertThat(transactions.search(new TransactionFilter(null,YearMonth.of(2026,12),TransactionType.EXPENSE,
+                TransactionStatus.SETTLED,null,null,false,false))).isEmpty();
+    }
+
+    @Test void handlesSettlementAcrossYearBoundaryWithoutDuplicatingRealizedValues() {
+        transactions.create(new TransactionInput(TransactionType.EXPENSE,"Virada antecipada",new BigDecimal("100"),
+                activeProfile.id(),expenseCategory.id(),LocalDate.of(2027,1,1),LocalDate.of(2027,1,1),
+                TransactionStatus.SETTLED,LocalDate.of(2026,12,31),null));
+        transactions.create(new TransactionInput(TransactionType.EXPENSE,"Virada atrasada",new BigDecimal("80"),
+                activeProfile.id(),expenseCategory.id(),LocalDate.of(2026,12,1),LocalDate.of(2026,12,31),
+                TransactionStatus.SETTLED,LocalDate.of(2027,1,1),null));
+        assertThat(dashboard.summary(YearMonth.of(2026,12)).paidExpenses()).isEqualByComparingTo("100");
+        assertThat(dashboard.summary(YearMonth.of(2027,1)).paidExpenses()).isEqualByComparingTo("80");
+    }
+
+    @Test void limitsUpcomingDueItemsToKeepDashboardCompactAndOrdersByDate() {
+        for(int day=19;day<=25;day++)create(TransactionType.EXPENSE,expenseCategory,"Conta "+day,"10",
+                TransactionStatus.PENDING,LocalDate.of(2026,9,day),null);
+        assertThat(dashboard.summary(YearMonth.of(2026,9)).upcomingDue()).hasSize(5)
+                .extracting("dueDate").containsExactly(
+                        LocalDate.of(2026,9,19),LocalDate.of(2026,9,20),LocalDate.of(2026,9,21),
+                        LocalDate.of(2026,9,22),LocalDate.of(2026,9,23));
+    }
+
+    @Test void permanentlyDeletesOnlyCancelledManualTransaction() {
+        var item=create(TransactionType.EXPENSE,expenseCategory,"Cancelável","10",TransactionStatus.PENDING,
+                LocalDate.of(2026,9,30),null);
+        assertThatThrownBy(()->transactions.deleteCancelled(item.id())).isInstanceOf(ValidationException.class)
+                .hasMessageContaining("cancelada");
+        transactions.cancel(item.id());transactions.deleteCancelled(item.id());
+        assertThatThrownBy(()->transactions.find(item.id())).isInstanceOf(ValidationException.class)
+                .hasMessageContaining("não encontrada");
     }
 
     private io.github.ryanoviski.hestia.domain.models.Transaction create(TransactionType type,Category category,String description,String amount,TransactionStatus status,LocalDate due,LocalDate settled){return transactions.create(input(type,category,description,new BigDecimal(amount),status,due,settled));}

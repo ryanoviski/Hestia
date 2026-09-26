@@ -11,6 +11,7 @@ import io.github.ryanoviski.hestia.domain.models.Profile;
 import io.github.ryanoviski.hestia.presentation.components.ComboBoxSupport;
 import io.github.ryanoviski.hestia.presentation.components.DatePickerSupport;
 import io.github.ryanoviski.hestia.presentation.components.DialogSupport;
+import io.github.ryanoviski.hestia.presentation.components.FormValidationSupport;
 import io.github.ryanoviski.hestia.presentation.components.ThemeManager;
 import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
@@ -85,17 +86,23 @@ public final class DocumentsController {
         ComboBoxSupport.configure(type, DocumentType::displayName);
         type.setValue(DocumentType.OTHER);
         TextField description = new TextField();
+        Label validation=new Label();validation.setWrapText(true);validation.getStyleClass().add("form-error");
         VBox fields = DialogSupport.section("Identificação", null,
                 DialogSupport.columns(DialogSupport.field("Perfil", profile, true),
                         DialogSupport.field("Tipo", type, true)),
-                DialogSupport.field("Descrição", description, false));
+                DialogSupport.field("Descrição", description, false),validation);
         dialog.getDialogPane().setContent(DialogSupport.content(
                 "Informe o contexto do anexo antes de selecionar o arquivo.", fields));
         ButtonType next = new ButtonType("Selecionar arquivo", ButtonBar.ButtonData.NEXT_FORWARD);
         ButtonType cancel = new ButtonType("Cancelar", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialog.getDialogPane().getButtonTypes().addAll(cancel, next);
         DialogSupport.prepare(dialog, documentsList, 600, 0);
-        if (dialog.showAndWait().orElse(cancel) != next || profile.getValue() == null) return;
+        dialog.getDialogPane().lookupButton(next).addEventFilter(javafx.event.ActionEvent.ACTION,event->{
+            if(!FormValidationSupport.validate(validation,
+                    FormValidationSupport.requiredChoice(profile,"Selecione o perfil."),
+                    FormValidationSupport.requiredChoice(type,"Selecione o tipo.")))event.consume();
+        });
+        if (dialog.showAndWait().orElse(cancel) != next) return;
         File file = chooser("Selecionar documento").showOpenDialog(documentsList.getScene().getWindow());
         if (file != null) {
             try {

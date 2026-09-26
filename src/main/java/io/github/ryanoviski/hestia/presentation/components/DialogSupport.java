@@ -70,11 +70,12 @@ public final class DialogSupport {
     }
 
     public static VBox field(String label, Node control, boolean required) {
-        Label title = new Label(label + (required ? " *" : ""));
+        Label title = new Label(label);
         title.getStyleClass().add("field-label");
         if (control instanceof Region region) {
             region.setMaxWidth(Double.MAX_VALUE);
         }
+        if (required) control.setAccessibleHelp("Campo obrigatório");
         VBox field = new VBox(5, title, control);
         field.getStyleClass().add("form-field");
         HBox.setHgrow(field, Priority.ALWAYS);

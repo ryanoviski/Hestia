@@ -63,19 +63,23 @@
 .content-scroll, .content-scroll > .viewport, .profiles-scroll, .profiles-scroll > .viewport, .scroll-pane, .scroll-pane > .viewport {
     -fx-background-color: transparent; -fx-border-color: transparent;
 }
-.styled-scroll .scroll-bar:vertical { -fx-background-color: transparent; -fx-pref-width: 10; -fx-padding: 1; }
-.styled-scroll .scroll-bar:vertical .track { -fx-background-color: #E7EEEC; -fx-background-radius: 5; }
-.styled-scroll .scroll-bar:vertical .thumb {
+.scroll-pane .scroll-bar:vertical, .list-view .scroll-bar:vertical { -fx-background-color: transparent; -fx-pref-width: 10; -fx-padding: 1; }
+.scroll-pane .scroll-bar:vertical .track, .list-view .scroll-bar:vertical .track { -fx-background-color: #E7EEEC; -fx-background-radius: 5; }
+.scroll-pane .scroll-bar:vertical .thumb, .list-view .scroll-bar:vertical .thumb {
     -fx-background-color: rgba(44, 116, 108, 0.48); -fx-background-radius: 5; -fx-background-insets: 1;
 }
-.styled-scroll .scroll-bar:vertical .thumb:hover {
+.scroll-pane .scroll-bar:vertical .thumb:hover, .list-view .scroll-bar:vertical .thumb:hover {
     -fx-background-color: -hestia-primary;
     -fx-effect: dropshadow(gaussian, rgba(22, 60, 57, 0.24), 5, 0.15, 0, 0);
 }
-.styled-scroll .scroll-bar:vertical .increment-button,
-.styled-scroll .scroll-bar:vertical .decrement-button { -fx-background-color: transparent; -fx-padding: 0; }
-.styled-scroll .scroll-bar:vertical .increment-arrow,
-.styled-scroll .scroll-bar:vertical .decrement-arrow { -fx-background-color: transparent; -fx-padding: 0; }
+.scroll-pane .scroll-bar .increment-button, .scroll-pane .scroll-bar .decrement-button,
+.list-view .scroll-bar .increment-button, .list-view .scroll-bar .decrement-button { -fx-background-color: transparent; -fx-padding: 0; }
+.scroll-pane .scroll-bar .increment-arrow, .scroll-pane .scroll-bar .decrement-arrow,
+.list-view .scroll-bar .increment-arrow, .list-view .scroll-bar .decrement-arrow { -fx-background-color: transparent; -fx-padding: 0; }
+.scroll-pane .scroll-bar:horizontal, .list-view .scroll-bar:horizontal { -fx-background-color: transparent; -fx-pref-height: 10; -fx-padding: 1; }
+.scroll-pane .scroll-bar:horizontal .track, .list-view .scroll-bar:horizontal .track { -fx-background-color: #E7EEEC; -fx-background-radius: 5; }
+.scroll-pane .scroll-bar:horizontal .thumb, .list-view .scroll-bar:horizontal .thumb { -fx-background-color: rgba(44,116,108,0.48); -fx-background-radius: 5; }
+.scroll-pane .scroll-bar:horizontal .thumb:hover, .list-view .scroll-bar:horizontal .thumb:hover { -fx-background-color: -hestia-primary; }
 
 /* Dashboard and reports */
 .dashboard-hero, .report-hero { -fx-background-color: -hestia-surface; -fx-background-radius: 12; -fx-border-color: -hestia-border; -fx-border-radius: 12; -fx-padding: 24 20; }

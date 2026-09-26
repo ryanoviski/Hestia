@@ -49,6 +49,14 @@ public final class InstallmentPlanService {
     public List<InstallmentPlan> list(){return repository.findInstallmentPlans(profiles.findDefaultHouseholdId());}
     public List<Installment> installments(long planId){return repository.findInstallments(profiles.findDefaultHouseholdId(),planId);}
     public void cancelRemaining(long planId){repository.cancelRemainingInstallments(profiles.findDefaultHouseholdId(),planId,LocalDate.now(clock));}
+    public void deleteInactive(long planId){
+        long householdId=profiles.findDefaultHouseholdId();
+        InstallmentPlan plan=list().stream().filter(item->item.id()==planId).findFirst()
+                .orElseThrow(()->new ValidationException("Parcelamento não encontrado."));
+        if(plan.active())throw new ValidationException("Cancele o parcelamento antes de excluí-lo definitivamente.");
+        if(!repository.deleteInactiveInstallmentPlan(householdId,planId))
+            throw new ValidationException("O parcelamento não pôde ser excluído.");
+    }
 
     public List<GeneratedExpense> preview(String description, java.math.BigDecimal totalAmount,
                                           int installmentCount, LocalDate firstDueDate) {
